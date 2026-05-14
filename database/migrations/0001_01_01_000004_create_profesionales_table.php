@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('profesionales', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->enum('modalidad_atencion', ['presencial', 'virtual', 'ambas']);
-            $table->string('descripcion');
+            $table->enum('modalidad_atencion', ['presencial', 'virtual', 'ambas'])->nullable;
+            $table->string('descripcion')->nullable;
             $table->float('puntuacion_promedio')->default(0);
             $table->timestamps();
         });

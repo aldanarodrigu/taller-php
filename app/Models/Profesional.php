@@ -6,18 +6,14 @@ class Profesional extends Model
 {
 
     protected $fillable = [
-        'nombre',
-        'apellido',
-        'telefono',
+        'user_id',
         'descripcion',
         'modalidad_atencion',
-        'puntuacion_promedio',
-        'ubicacion_id',
-        'user_id'
+        'puntuacion_promedio'
     ];
 
     public function user(){
-        return this->belongsTo(User::class);
+        return $this->belongsTo(User::class);
     }
 
 }
