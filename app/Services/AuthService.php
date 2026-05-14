@@ -35,9 +35,6 @@ class AuthService{
         }else{
             $this->profesionalRepository->create([ //campos null el usuario los llena despue
                 'user_id' => $user->id,
-                'descripcion' => null,
-                'modalidad_atencion' => null,
-                'puntuacion_promedio' => 0
             ]);
         }
 
