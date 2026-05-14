@@ -21,6 +21,21 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Docker
+
+Este proyecto incluye una pila de desarrollo con PHP-FPM, Nginx, MySQL y Redis.
+
+Para levantarla:
+
+```bash
+docker compose up --build
+```
+
+La aplicación quedará disponible en `http://localhost:8080`.
+
+Si es la primera vez, Laravel generará el archivo `.env` y la clave de aplicación al iniciar el contenedor `app`.
+Después de levantar los contenedores, ejecuta las migraciones con `docker compose exec app php artisan migrate`.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
