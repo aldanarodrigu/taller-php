@@ -4,6 +4,9 @@ namespace App\Services;
 use App\Repositories\UserRepository;
 use App\Repositories\ClienteRepository;
 use App\Repositories\ProfesionalRepository;
+use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class AuthService{
 
@@ -18,7 +21,7 @@ class AuthService{
         $this->profesionalRepository = $profesionalRepository;
     }
 
-    public function registrar($request){
+    public function registrar(Request $request){
         $user = $this->userRepository->create([
             'nombre' => $request->nombre,
             'apellido' => $request->apellido,
@@ -44,6 +47,25 @@ class AuthService{
             'token' => $token,
             'user' => $user,
         ];
+    }
+
+    public function login(Request $request){
+        
+        $user = $this->userRepository->findByEmail($request->email);
+
+        if(!$user){
+            throw new Exception('Usuario no registrado', 401);
+        }
+
+        if (!Hash::check($request->password, $user->password)) {
+            throw new Exception('Contraseña incorrecta', 401);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return [
+            'token' => $token 
+        ]; 
     }
 
 }
