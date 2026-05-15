@@ -46,4 +46,8 @@ class AuthController extends Controller{
 
     }
 
+    public function getAuthenticatedUser(Request $request) {
+        return response()->json($request->user(), 200);
+    }
+
 }
