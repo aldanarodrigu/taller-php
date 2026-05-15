@@ -4,6 +4,8 @@ namespace App\Services;
 use App\Repositories\UserRepository;
 use App\Repositories\ClienteRepository;
 use App\Repositories\ProfesionalRepository;
+use App\Models\User;
+
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -64,7 +66,8 @@ class AuthService{
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return [
-            'token' => $token 
+            'token' => $token ,
+            'user' => $user
         ]; 
     }
 

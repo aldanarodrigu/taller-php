@@ -1,14 +1,27 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UsuariosController;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/registrar', [AuthController::class, 'registrar']);
-Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->get('/auth/me', [AuthController::class, 'getAuthenticatedUser']);
+//AUTH
+    Route::post('/registrar', [AuthController::class, 'registrar']);
+    
+    Route::post('/login', [AuthController::class, 'login']);
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->group(function () {
+
+        Route::get('/me', [AuthController::class, 'getAuthenticatedUser']);
+
+    });
+
+
+//USUARIOS
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/usuarios/{id}', [UsuariosController::class, 'buscarPorId']);
+
+});

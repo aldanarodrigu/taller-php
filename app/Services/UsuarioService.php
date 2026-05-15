@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Services;
+
+use App\Repositories\UserRepository;
+use App\Models\User;
+use Exception;
+
+class UsuarioService{
+
+    private UserRepository $userRepository;
+
+    public function __construct(UserRepository $userRepository){
+        $this->userRepository = $userRepository;
+    }
+
+    public function buscarPorId(int $id){
+        $user = $this->userRepository->findById($id);
+
+        if(!$user){
+            throw new Exception('Usuario no encontrado', 401);
+        }
+
+        return $user;
+    }
+
+}
