@@ -17,4 +17,9 @@ class UserRepository
     public function findById(Int $id){
         return User::where('id', $id)->first();
     }
+
+    public function findAll(){
+        return User::all();
+    }
+    
 }

@@ -19,5 +19,10 @@ class UsuariosController extends Controller{
         return response()->json($user, 200);
     }
 
+    public function listarUsuarios(){
+        $users = $this->usuarioService->listarUsuarios();
+
+        return response()->json($users, 200);
+    }
 
 }

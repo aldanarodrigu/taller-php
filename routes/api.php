@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 //USUARIOS
 Route::middleware('auth:sanctum')->group(function () {
 
+    Route::get('/usuarios', [UsuariosController::class, 'listarUsuarios']);
     Route::get('/usuarios/{id}', [UsuariosController::class, 'buscarPorId']);
 
 });

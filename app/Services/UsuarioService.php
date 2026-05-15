@@ -24,4 +24,8 @@ class UsuarioService{
         return $user;
     }
 
+    public function listarUsuarios(){
+        return $this->userRepository->findAll();
+    }
+
 }
