@@ -3,6 +3,8 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UsuariosController;
 use App\Http\Controllers\ServicioController;
+use App\Http\Controllers\DisponibilidadController;
+use App\Http\Controllers\ReservaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
+
 //SERVICIOS
 Route::get('/services', [ServicioController::class, 'index']);
 Route::get('/services/{id}', [ServicioController::class, 'show']);
@@ -37,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/services/{id}', [ServicioController::class, 'update']);
     Route::delete('/services/{id}', [ServicioController::class, 'destroy']);
 });
+
 
 //PAQUETES
 use App\Http\Controllers\PaqueteController;
@@ -51,4 +55,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/packages/{id}/comprar', [PaqueteController::class, 'comprar']);
     Route::post('/packages/{id}/usar-sesion', [PaqueteController::class, 'usarSesion']);
 });
+
+
+//DISPONIBILIDAD
+
+Route::post('/disponibilidades', [DisponibilidadController::class, 'store']);
+Route::get('/disponibilidades/profesional/{id}', [DisponibilidadController::class, 'listarPorProfesional']);
  
+
+//RESERVAS
+
+Route::post('/reservas', [ReservaController::class, 'store']);
+Route::get('/reservas', [ReservaController::class, 'index']);
+Route::get('/reservas/{id}', [ReservaController::class, 'show']);
+
+
+//PAGOS
+Route::post('/pagos', [PagoController::class, 'store']);
+Route::get('/pagos', [PagoController::class, 'index']);
+Route::get('/pagos/{id}', [PagoController::class, 'show']);
