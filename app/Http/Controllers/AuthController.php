@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\AuthService;
+use Laravel\Socialite\Facades\Socialite;
+use App\Models\User;
 
 class AuthController extends Controller{
     
@@ -48,6 +50,29 @@ class AuthController extends Controller{
 
     public function getAuthenticatedUser(Request $request) {
         return response()->json($request->user(), 200);
+    }
+
+    public function redirectGoogle()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    public function callbackGoogle()
+    {
+        $googleUser = Socialite::driver('google')->stateless()->user();
+
+        $user = User::firstOrCreate(
+            ['email' => $googleUser->email],
+            [
+                'nombre' => $googleUser->name,
+                'google_id' => $googleUser->id,
+                'password' => bcrypt(uniqid())
+            ]
+        );
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+        
+        return redirect(env('http://localhost:5173') . '/auth/callback?token=' . $token);
     }
 
 }
