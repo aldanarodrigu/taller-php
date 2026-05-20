@@ -32,4 +32,10 @@ class ReservaRepository {
             ->whereIn('estado', ['pendiente', 'confirmada', 'pagada', 'en_curso'])
             ->get();
     }
+    
+    public function update(Reserva $reserva, array $data): Reserva
+    {
+        $reserva->update($data);
+        return $reserva;
+    }
 }

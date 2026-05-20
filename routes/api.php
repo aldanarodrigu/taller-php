@@ -5,6 +5,7 @@ use App\Http\Controllers\UsuariosController;
 use App\Http\Controllers\ServicioController;
 use App\Http\Controllers\DisponibilidadController;
 use App\Http\Controllers\ReservaController;
+use App\Http\Controllers\ExcepcionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -64,13 +65,19 @@ Route::get('/disponibilidades/profesional/{id}', [DisponibilidadController::clas
  
 
 //RESERVAS
-
 Route::post('/reservas', [ReservaController::class, 'store']);
 Route::get('/reservas', [ReservaController::class, 'index']);
 Route::get('/reservas/{id}', [ReservaController::class, 'show']);
+Route::patch('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
 
 
 //PAGOS
 Route::post('/pagos', [PagoController::class, 'store']);
 Route::get('/pagos', [PagoController::class, 'index']);
 Route::get('/pagos/{id}', [PagoController::class, 'show']);
+
+
+//EXCEPCIONES
+Route::post('/excepciones', [ExcepcionController::class, 'store']);
+Route::get('/excepciones', [ExcepcionController::class, 'index']);
+Route::get('/excepciones/{id}', [ExcepcionController::class, 'show']);
