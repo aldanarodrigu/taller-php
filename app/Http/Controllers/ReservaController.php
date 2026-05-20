@@ -18,8 +18,7 @@ class ReservaController extends Controller
         $request->validate([
             'servicio_id' => 'required|integer',
             'fecha' => 'required|date',
-            'dia_semana' => 'required|string|max:255',
-            'hora_inicio' => 'required|date_format:H:i',
+            'hora_inicio' => 'required|date_format:H:i'
         ]);
 
         try {
@@ -46,6 +45,17 @@ class ReservaController extends Controller
     {
         try {
             $reserva = $this->reservaService->obtener($id);
+            return response()->json($reserva, 200);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
+        }
+    }
+    
+    // PATCH /reservas/{id}/cancelar
+    public function cancelar(Request $request, int $id)
+    {
+        try {
+            $reserva = $this->reservaService->cancelar($request, $id);
             return response()->json($reserva, 200);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
