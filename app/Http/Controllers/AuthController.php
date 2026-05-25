@@ -65,6 +65,9 @@ class AuthController extends Controller{
             ['email' => $googleUser->email],
             [
                 'nombre' => $googleUser->name,
+                'apellido' => '-',
+                'telefono' => '-',
+                'role' => 'cliente',
                 'google_id' => $googleUser->id,
                 'password' => bcrypt(uniqid())
             ]
@@ -72,7 +75,7 @@ class AuthController extends Controller{
 
         $token = $user->createToken('auth_token')->plainTextToken;
         
-        return redirect(env('http://localhost:5173') . '/auth/callback?token=' . $token);
+        return redirect(env('FRONTEND_URL') . '/auth/callback?token=' . $token);
     }
 
 }
