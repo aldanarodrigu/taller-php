@@ -25,4 +25,17 @@ class UsuariosController extends Controller{
         return response()->json($users, 200);
     }
 
+    public function editarUsuario(Request $request, int $id){
+        $request->validate([
+            'nombre' => 'required',
+            'apellido' => 'required',
+            'telefono' => 'required',
+            'email' => 'required|email'
+        ]);
+
+        $user = $this->usuarioService->editarUsuario($request, $id);
+
+        return response()->json($user, 200);
+    }
+
 }

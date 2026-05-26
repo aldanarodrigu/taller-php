@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
     Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/me', [AuthController::class, 'getAuthenticatedUser']);
+        Route::post('/logout', [AuthController::class, 'logout']);
 
     });
 
@@ -27,7 +28,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/usuarios', [UsuariosController::class, 'listarUsuarios']);
     Route::get('/usuarios/{id}', [UsuariosController::class, 'buscarPorId']);
-
+    Route::put('/usuarios/{id}', [UsuariosController::class, 'editarUsuario']);
+    
 });
 
 
