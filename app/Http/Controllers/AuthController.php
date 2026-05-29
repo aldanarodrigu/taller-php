@@ -21,7 +21,7 @@ class AuthController extends Controller{
         $request->validate([
             'nombre' => 'required',
             'apellido' => 'required',
-            'telefono' => 'required',
+            'telefono' => 'nullable',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'role' => 'required|in:cliente,profesional'
@@ -57,7 +57,13 @@ class AuthController extends Controller{
     }
 
     public function getAuthenticatedUser(Request $request) {
-        return response()->json($request->user(), 200);
+        $user = $request->user();
+        
+        if ($user->esProfesional()) {
+            $user->load('profesional');
+        }
+
+        return response()->json($user, 200);
     }
 
     public function redirectGoogle()

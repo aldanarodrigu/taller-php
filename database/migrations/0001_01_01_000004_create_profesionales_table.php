@@ -14,6 +14,7 @@ return new class extends Migration
             $table->enum('modalidad_atencion', ['presencial', 'virtual', 'ambas'])->nullable();
             $table->string('descripcion')->nullable();
             $table->float('puntuacion_promedio')->default(0);
+            $table->string('profesion')->nullable();
             $table->timestamps();
         });
     }
