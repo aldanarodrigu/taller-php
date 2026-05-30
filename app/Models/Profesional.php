@@ -10,7 +10,8 @@ class Profesional extends Model
         'user_id',
         'descripcion',
         'modalidad_atencion',
-        'puntuacion_promedio'
+        'puntuacion_promedio',
+        'profesion'
     ];
 
     public function user(){

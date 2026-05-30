@@ -35,15 +35,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
 //SERVICIOS
 Route::get('/services', [ServicioController::class, 'index']);
-Route::get('/services/{id}', [ServicioController::class, 'show']);
-Route::get('/services/{id}/coordenadas', [ServicioController::class, 'coordenadas']);
- 
+
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/services/me', [ServicioController::class, 'misServicios']);
     Route::post('/services', [ServicioController::class, 'store']);
     Route::put('/services/{id}', [ServicioController::class, 'update']);
     Route::delete('/services/{id}', [ServicioController::class, 'destroy']);
 });
 
+Route::get('/services/{id}', [ServicioController::class, 'show']);
+Route::get('/services/{id}/coordenadas', [ServicioController::class, 'coordenadas']);
+ 
 
 //PAQUETES
 use App\Http\Controllers\PaqueteController;

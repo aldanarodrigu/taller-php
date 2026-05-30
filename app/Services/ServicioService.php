@@ -42,6 +42,21 @@ class ServicioService
         ]);
     }
 
+    public function obtenerServiciosUsuario(Request $request)
+    {
+        $profesional = $request->user()->profesional;
+
+        if (!$profesional) {
+            throw new Exception(
+                'El usuario no tiene perfil de profesional',
+                403
+            );
+        }
+
+        return $this->servicioRepository
+            ->findByProfesional($profesional->id);
+    }
+
     public function obtener(int $id): Servicio
     {
         $servicio = $this->servicioRepository->findById($id);
