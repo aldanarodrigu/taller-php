@@ -7,5 +7,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'callbackGoogle']);

@@ -8,7 +8,6 @@ services:
     working_dir: /var/www/html
     volumes:
       - .:/var/www/html
-      - vendor:/var/www/html/vendor
       - storage:/var/www/html/storage
     environment:
       APP_ENV: local
@@ -23,7 +22,8 @@ services:
       DB_SSLMODE: ${DB_SSLMODE:-require}
       CACHE_STORE: ${CACHE_STORE:-redis}
       SESSION_DRIVER: ${SESSION_DRIVER:-database}
-      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-redis}
+      BROADCAST_CONNECTION: ${BROADCAST_CONNECTION:-reverb}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
@@ -56,8 +56,35 @@ services:
     networks:
       - taller-net
 
+  websockets:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taller-php-websockets
+    restart: unless-stopped
+    working_dir: /var/www/html
+    ports:
+      - "6001:6001"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      REVERB_APP_ID: ${REVERB_APP_ID:-local-app}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:-local-key}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:-local-secret}
+      REVERB_HOST: ${REVERB_HOST:-0.0.0.0}
+      REVERB_PORT: ${REVERB_PORT:-6001}
+      REVERB_SCHEME: ${REVERB_SCHEME:-http}
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=6001", "--debug"]
+    depends_on:
+      - app
+      - redis
+    volumes:
+      - .:/var/www/html
+      - storage:/var/www/html/storage
+    networks:
+      - taller-net
+
 volumes:
-  vendor:
   storage:
 
 networks:

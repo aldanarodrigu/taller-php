@@ -11,7 +11,7 @@ RUN apt-get update \
         libpq-dev \
         unzip \
         $PHPIZE_DEPS \
-    && docker-php-ext-install bcmath intl pdo_mysql pdo_pgsql zip opcache \
+    && docker-php-ext-install bcmath intl pdo_mysql pdo_pgsql zip opcache pcntl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/*

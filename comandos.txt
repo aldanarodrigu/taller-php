@@ -1,0 +1,94 @@
+Comandos para correr la app (Docker recomendado)
+
+-- Levantar todo (build + detach)
+docker compose up -d --build
+
+-- Levantar un servicio concreto y reconstruirlo
+docker compose up -d --no-deps --build websockets
+
+-- Ver estado de los servicios
+docker compose ps
+
+-- Ver logs (seguimiento) de varios servicios
+docker compose logs -f nginx app websockets redis --no-log-prefix --tail 200
+
+-- Entrar al contenedor `app`
+docker compose exec app bash   # o sh si bash no está disponible
+
+-- Ejecutar composer dentro del contenedor
+docker compose exec app composer install --no-interaction --prefer-dist --optimize-autoloader
+
+-- Copiar/crear .env y generar key (dentro de app)
+cp .env.example .env
+docker compose exec app php artisan key:generate
+
+-- Migrar y seed (forzar en CI/producción)
+docker compose exec app php artisan migrate --force
+docker compose exec app php artisan db:seed --force
+
+-- Crear enlace de storage
+docker compose exec app php artisan storage:link
+
+-- Instalar assets / build frontend (si aplica)
+docker compose exec app npm install
+docker compose exec app npm run build   # o npm run dev
+
+-- Ejecutar worker (una vez) o en foreground
+docker compose exec app php artisan queue:work --once --tries=1
+# o para worker continuo
+docker compose exec app php artisan queue:work
+
+-- Iniciar Reverb (desde el contenedor app, si no lo ejecuta Compose)
+docker compose exec app php artisan reverb:start --host=0.0.0.0 --port=6001 --debug
+
+-- Ejecutar tests
+docker compose exec app ./vendor/bin/phpunit
+# o
+docker compose exec app php artisan test
+
+-- Parar y eliminar contenedores/red/volúmenes
+docker compose down
+
+Comandos útiles para depuración / pruebas rápidas
+
+-- Publicar manualmente un evento (sin ruta HTTP) desde app
+docker compose exec app php -r "require 'vendor/autoload.php'; $p=new \\Pusher\\Pusher(getenv('REVERB_APP_KEY'), getenv('REVERB_APP_SECRET'), getenv('REVERB_APP_ID'), ['host'=>getenv('REVERB_HOST')?:'websockets','port'=>intval(getenv('REVERB_PORT')?:6001),'scheme'=>getenv('REVERB_SCHEME')?:'http','timeout'=>5]); $p->trigger('test-channel','manual-event',['message'=>'hello']); echo \"sent\\n\";"
+
+-- Seguir logs solo del servidor Reverb
+docker compose logs -f websockets --no-log-prefix --tail 200
+
+-- Ejecutar un comando ad-hoc (artesano) en app
+docker compose exec app php artisan tinker
+
+Ejecución nativa (sin Docker)
+
+-- Instalar dependencias PHP / JS
+composer install
+npm install
+
+-- Configurar .env y key
+cp .env.example .env
+php artisan key:generate
+
+-- Migrar y seed
+php artisan migrate --seed
+
+-- Levantar servidor de desarrollo
+php artisan serve --host=127.0.0.1 --port=8000
+
+-- Iniciar Redis (local) — ejemplo con Docker
+docker run -d --name redis -p 6379:6379 redis:7-alpine
+
+-- Iniciar Reverb (local)
+php artisan reverb:start --host=0.0.0.0 --port=6001 --debug
+
+-- Ejecutar worker
+php artisan queue:work
+
+Comandos de mantenimiento / reconstrucción
+
+-- Reconstruir contenedores tras cambiar Dockerfile
+docker compose up -d --build
+
+-- Reconstruir e iniciar un servicio específico
+docker compose up -d --no-deps --build app
