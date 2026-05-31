@@ -12,11 +12,12 @@ class PagoController extends Controller
         private PagoService $pagoService
     ) {}
 
-    // POST /pagos
+    // POST /pagos — iniciar pago de una reserva
     public function store(Request $request)
     {
         $request->validate([
-            'monto' => 'required|numeric|min:0'
+            'reserva_id' => 'required|integer|exists:reservas,id',
+            'monto'      => 'required|numeric|min:0',
         ]);
 
         try {
@@ -27,22 +28,29 @@ class PagoController extends Controller
         }
     }
 
-    // GET /pagos
-    public function index()
+    // GET /pagos — listar pagos del usuario logueado
+    public function index(Request $request)
+    {
+        $pagos = $this->pagoService->listarDelUsuario($request);
+        return response()->json($pagos, 200);
+    }
+
+    // GET /pagos/{id} — obtener estado de un pago
+    public function show(int $id)
     {
         try {
-            $pagos = $this->pagoService->listar();
-            return response()->json($pagos, 200);
+            $pago = $this->pagoService->obtener($id);
+            return response()->json($pago, 200);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
         }
     }
 
-    // GET /pagos/{id}
-    public function show(int $id)
+    // POST /pagos/{id}/reintentar — reintentar pago rechazado
+    public function reintentar(Request $request, int $id)
     {
         try {
-            $pago = $this->pagoService->obtener($id);
+            $pago = $this->pagoService->reintentar($request, $id);
             return response()->json($pago, 200);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);

@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CalificacionController;
 use App\Http\Controllers\PaqueteController;
+use App\Http\Controllers\PagoController;
+use App\Http\Controllers\VideoController;
+
 
 //AUTH
     Route::post('/registrar', [AuthController::class, 'registrar']);
@@ -75,9 +78,12 @@ Route::patch('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
 
 
 //PAGOS
-Route::post('/pagos', [PagoController::class, 'store']);
-Route::get('/pagos', [PagoController::class, 'index']);
-Route::get('/pagos/{id}', [PagoController::class, 'show']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/pagos', [PagoController::class, 'store']);
+    Route::get('/pagos', [PagoController::class, 'index']);
+    Route::get('/pagos/{id}', [PagoController::class, 'show']);
+    Route::post('/pagos/{id}/reintentar', [PagoController::class, 'reintentar']);
+});
 
 
 //EXCEPCIONES
@@ -95,3 +101,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [CalificacionController::class, 'store']);
     Route::delete('/reviews/{id}', [CalificacionController::class, 'destroy']);
 });
+
+//VIDEOLLAMADAS
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/video/reservas/{id}/token', [VideoController::class, 'generarToken']);
+    Route::post('/video/reservas/{id}/renovar-token', [VideoController::class, 'renovarToken']);
+    Route::patch('/video/reservas/{id}/finalizar', [VideoController::class, 'finalizar']);
+});
+
