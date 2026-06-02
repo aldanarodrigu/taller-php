@@ -4,24 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Pago extends Model
+class Calificacion extends Model
 {
-    protected $table = 'pagos';
+    protected $table = 'calificaciones';
 
     protected $fillable = [
         'reserva_id',
-        'usuario_id',
-        'monto',
-        'metodo',
-        'estado',
-        'fecha_pago',
-        'hora_pago',
+        'cliente_id',
+        'puntuacion',
+        'comentario',
     ];
 
     protected function casts(): array
     {
         return [
-            'monto' => 'decimal:2',
+            'puntuacion' => 'integer',
         ];
     }
 
@@ -30,8 +27,8 @@ class Pago extends Model
         return $this->belongsTo(Reserva::class);
     }
 
-    public function usuario()
+    public function cliente()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Cliente::class);
     }
 }

@@ -15,7 +15,9 @@ class Reserva extends Model
         'fecha',
         'hora_inicio',
         'hora_fin',
-        'estado'
+        'estado',
+        'livekit_room',
+        'livekit_token',
     ];
     
     public function cliente()

@@ -9,6 +9,10 @@ use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ExcepcionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CalificacionController;
+use App\Http\Controllers\PaqueteController;
+use App\Http\Controllers\PagoController;
+use App\Http\Controllers\VideoController;
 
 
 //AUTH
@@ -49,8 +53,6 @@ Route::get('/services/{id}/coordenadas', [ServicioController::class, 'coordenada
  
 
 //PAQUETES
-use App\Http\Controllers\PaqueteController;
- 
 Route::get('/packages', [PaqueteController::class, 'index']);
 Route::get('/packages/{id}', [PaqueteController::class, 'show']);
  
@@ -77,12 +79,34 @@ Route::patch('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
 
 
 //PAGOS
-Route::post('/pagos', [PagoController::class, 'store']);
-Route::get('/pagos', [PagoController::class, 'index']);
-Route::get('/pagos/{id}', [PagoController::class, 'show']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/pagos', [PagoController::class, 'store']);
+    Route::get('/pagos', [PagoController::class, 'index']);
+    Route::get('/pagos/{id}', [PagoController::class, 'show']);
+    Route::post('/pagos/{id}/reintentar', [PagoController::class, 'reintentar']);
+});
 
 
 //EXCEPCIONES
 Route::post('/excepciones', [ExcepcionController::class, 'store']);
 Route::get('/excepciones', [ExcepcionController::class, 'index']);
 Route::get('/excepciones/{id}', [ExcepcionController::class, 'show']);
+
+
+//RESEÑAS
+Route::get('/reviews', [CalificacionController::class, 'index']);
+Route::get('/reviews/{id}', [CalificacionController::class, 'show']);
+Route::get('/services/{id}/reviews', [CalificacionController::class, 'porServicio']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/reviews', [CalificacionController::class, 'store']);
+    Route::delete('/reviews/{id}', [CalificacionController::class, 'destroy']);
+});
+
+//VIDEOLLAMADAS
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/video/reservas/{id}/token', [VideoController::class, 'generarToken']);
+    Route::post('/video/reservas/{id}/renovar-token', [VideoController::class, 'renovarToken']);
+    Route::patch('/video/reservas/{id}/finalizar', [VideoController::class, 'finalizar']);
+});
+
