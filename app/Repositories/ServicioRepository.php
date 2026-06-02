@@ -29,7 +29,9 @@ class ServicioRepository
 
     public function findByProfesional(int $profesionalId)
     {
-        return Servicio::where('profesional_id', $profesionalId)->get();
+        return Servicio::with('profesional.user')
+            ->where('profesional_id', $profesionalId)
+            ->get();
     }
 
     public function listarConFiltros(array $filtros)
