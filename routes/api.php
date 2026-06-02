@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CalificacionController;
 use App\Http\Controllers\PaqueteController;
-use App\Http\Controllers\PagoController;
 use App\Http\Controllers\VideoController;
 
 
