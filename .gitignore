@@ -26,3 +26,16 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /nbproject/private/
+
+# Ignore frontend build artifacts copied into public and deploy instructions
+/DEPLOY_FRONT_AND_TUNNEL.txt
+/RUN_COMMANDS.txt
+
+# Frontend build outputs (adjust if your frontend writes to another folder)
+/public/assets/
+/public/*.html
+/public/*.js
+/public/*.css
+/public/*.map
+/public/*.png
+/public/*.ico
