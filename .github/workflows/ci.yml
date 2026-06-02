@@ -10,6 +10,8 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    env:
+      BROADCAST_DRIVER: log
 
     steps:
       - name: Checkout code
