@@ -36,6 +36,22 @@ La aplicación quedará disponible en `http://localhost:8080`.
 Si es la primera vez, Laravel generará el archivo `.env` y la clave de aplicación al iniciar el contenedor `app`.
 Después de levantar los contenedores, ejecuta las migraciones con `docker compose exec app php artisan migrate`.
 
+## CI/CD
+
+Este repositorio incluye workflows de GitHub Actions para automatizar validación y despliegue:
+
+- `CI`: corre en cada `push` y `pull_request`, instala dependencias y ejecuta `composer test`.
+- `Deploy`: se ejecuta en `push` a `main` o manualmente, y despliega por SSH en un servidor que ya tenga el repositorio clonado.
+
+Para el despliegue debes definir estos secretos en GitHub:
+
+- `DEPLOY_HOST`
+- `DEPLOY_USER`
+- `DEPLOY_PATH`
+- `DEPLOY_SSH_KEY`
+
+El pipeline de despliegue asume que el servidor puede ejecutar `git`, `composer` y `php artisan`.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
