@@ -6,6 +6,9 @@ use App\Repositories\ServicioRepository;
 use App\Repositories\DisponibilidadRepository;
 use App\Repositories\ExcepcionRepository;
 use App\Models\Reserva;
+
+use App\Notifications\NuevaReservaNotification;
+
 use Exception;
 use Illuminate\Http\Request;
 
@@ -130,7 +133,7 @@ class ReservaService {
             }
         }
         
-        return $this->reservaRepository->create([
+        $reserva = $this->reservaRepository->create([
             'cliente_id'   => $cliente->id,
             'servicio_id'  => $servicio->id,
             'pago_id'      => null,
@@ -139,7 +142,14 @@ class ReservaService {
             'hora_fin'     => $horaFinTexto,
             'estado'       => 'pendiente'
         ]);
+
+        $usuarioProfesional = $servicio->profesional->user;
+
+        $usuarioProfesional->notify(new NuevaReservaNotification($reserva));
+
+        return $reserva;
     }
+    
     
     public function listar()
     {
