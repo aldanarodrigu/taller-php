@@ -1,0 +1,39 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to deploy
+        required: false
+        default: main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Trust deployment host
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy application
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_REF: ${{ github.event.inputs.ref || 'main' }}
+        run: |
+          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" "set -e; cd '${DEPLOY_PATH}'; git fetch --all --tags --prune; if git show-ref --verify --quiet 'refs/remotes/origin/${DEPLOY_REF}'; then git checkout -B '${DEPLOY_REF}' 'origin/${DEPLOY_REF}'; git reset --hard 'origin/${DEPLOY_REF}'; else git checkout --detach '${DEPLOY_REF}'; git reset --hard '${DEPLOY_REF}'; fi; composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader; php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; sudo systemctl restart php8.4-fpm nginx taller-php-queue taller-php-reverb"
