@@ -7,6 +7,9 @@ use App\Repositories\DisponibilidadRepository;
 use App\Repositories\ExcepcionRepository;
 use App\Models\Reserva;
 use App\Events\AgendaActualizada;
+
+use App\Notifications\NuevaReservaNotification;
+
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -169,7 +172,53 @@ class ReservaService {
                 409
             );
         }
+        
+        if (
+            $disponibilidadUsada->hora_inicio_pausa !== null &&
+            $disponibilidadUsada->hora_fin_pausa !== null
+        ) {
+            $seSuperponeConPausa =
+                $request->hora_inicio < $disponibilidadUsada->hora_fin_pausa &&
+                $horaFinTexto > $disponibilidadUsada->hora_inicio_pausa;
+
+            if ($seSuperponeConPausa) {
+                throw new Exception('El horario solicitado coincide con la pausa del profesional', 409);
+            }
+        }
+
+        foreach ($reservasDelDia as $reserva) {
+            $inicioReservaExistente = $reserva->hora_inicio;
+
+            $finReservaExistente = new \DateTime($reserva->hora_fin);
+            $finReservaExistente->modify('+' . $buffer . ' minutes');
+            $finReservaExistenteTexto = $finReservaExistente->format('H:i');
+
+            $seSuperpone =
+                $request->hora_inicio < $finReservaExistenteTexto &&
+                $horaFinTexto > $inicioReservaExistente;
+
+            if ($seSuperpone) {
+                throw new Exception('Ya existe una reserva en ese horario o dentro del buffer requerido', 409);
+            }
+        }
+        
+        $reserva = $this->reservaRepository->create([
+            'cliente_id'   => $cliente->id,
+            'servicio_id'  => $servicio->id,
+            'pago_id'      => null,
+            'fecha'        => $request->fecha,
+            'hora_inicio'  => $request->hora_inicio,
+            'hora_fin'     => $horaFinTexto,
+            'estado'       => 'pendiente'
+        ]);
+
+        $usuarioProfesional = $servicio->profesional->user;
+
+        $usuarioProfesional->notify(new NuevaReservaNotification($reserva));
+
+        return $reserva;
     }
+    
     
     public function listar()
     {
