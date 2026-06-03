@@ -5,12 +5,12 @@ use App\Http\Controllers\UsuariosController;
 use App\Http\Controllers\ServicioController;
 use App\Http\Controllers\DisponibilidadController;
 use App\Http\Controllers\ReservaController;
+use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ExcepcionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CalificacionController;
 use App\Http\Controllers\PaqueteController;
-use App\Http\Controllers\PagoController;
 use App\Http\Controllers\VideoController;
 
 
