@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CalificacionController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\AgendaController;
 
 
 //AUTH
@@ -64,14 +65,22 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-//DISPONIBILIDAD
+// DISPONIBILIDAD
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/disponibilidades', [DisponibilidadController::class, 'store']);
+});
 
-Route::post('/disponibilidades', [DisponibilidadController::class, 'store']);
 Route::get('/disponibilidades/profesional/{id}', [DisponibilidadController::class, 'listarPorProfesional']);
  
 
 // RESERVAS
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/reservas', [ReservaController::class, 'store']);
+    Route::patch('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
+});
+
+Route::get('/reservas', [ReservaController::class, 'index']);
+Route::get('/reservas/{id}', [ReservaController::class, 'show']);
     Route::post('/reservas', [ReservaController::class, 'store']); 
     Route::get('/reservas', [ReservaController::class, 'index']);
     Route::get('/reservas/{id}', [ReservaController::class, 'show']);
@@ -88,8 +97,11 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-//EXCEPCIONES
-Route::post('/excepciones', [ExcepcionController::class, 'store']);
+// EXCEPCIONES
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/excepciones', [ExcepcionController::class, 'store']);
+});
+
 Route::get('/excepciones', [ExcepcionController::class, 'index']);
 Route::get('/excepciones/{id}', [ExcepcionController::class, 'show']);
 
@@ -111,3 +123,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/video/reservas/{id}/finalizar', [VideoController::class, 'finalizar']);
 });
 
+// AGENDA
+Route::get('/agenda/profesional/{id}', [AgendaController::class, 'profesional']);

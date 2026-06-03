@@ -38,4 +38,20 @@ class ReservaRepository {
         $reserva->update($data);
         return $reserva;
     }
+    
+    public function findByServicioFechaAndEstadosActivosForUpdate(
+        int $servicioId,
+        string $fecha
+    ){
+        return Reserva::where('servicio_id', $servicioId)
+            ->where('fecha', $fecha)
+            ->whereIn('estado', [
+                'pendiente',
+                'confirmada',
+                'pagada',
+                'en curso'
+            ])
+            ->lockForUpdate()
+            ->get();
+    }
 }
