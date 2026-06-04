@@ -81,11 +81,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/reservas', [ReservaController::class, 'index']);
 Route::get('/reservas/{id}', [ReservaController::class, 'show']);
-    Route::post('/reservas', [ReservaController::class, 'store']); 
-    Route::get('/reservas', [ReservaController::class, 'index']);
-    Route::get('/reservas/{id}', [ReservaController::class, 'show']);
-    Route::patch('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
-});
 
 
 //PAGOS
