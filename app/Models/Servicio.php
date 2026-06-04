@@ -57,6 +57,6 @@ class Servicio extends Model
 
     public function scopeActivo($query)
     {
-        return $query->where('activo', true);
+        return $query->whereRaw('"activo" IS TRUE');
     }
 }

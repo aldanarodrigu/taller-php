@@ -29,7 +29,7 @@ class PaqueteRepository
 
     public function listarActivos()
     {
-        return Paquete::with('servicios')->where('activo', true)->get();
+        return Paquete::with('servicios')->whereRaw('"activo" IS TRUE')->get();
     }
 
     public function sincronizarServicios(Paquete $paquete, array $servicioIds): void
