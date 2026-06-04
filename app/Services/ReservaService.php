@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services;
+use App\Notifications\ReservaCanceladaNotificacion;
 use App\Repositories\ReservaRepository;
 use App\Repositories\ServicioRepository;
 use App\Repositories\DisponibilidadRepository;
@@ -242,6 +243,9 @@ class ReservaService {
         ]);
 
         event(new AgendaActualizada($reserva, 'cancelada'));
+
+        $profesionalReserva = $servicio->profesional->user;
+        $profesionalReserva->notify(new ReservaCanceladaNotificacion($reserva));
 
         return $reserva;
     }
