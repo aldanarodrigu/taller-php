@@ -24,6 +24,11 @@ use App\Http\Controllers\AgendaController;
 
         Route::get('/me', [AuthController::class, 'getAuthenticatedUser']);
         Route::post('/logout', [AuthController::class, 'logout']);
+// Health check
+Route::get('/health', function () {
+    return response()->json(['ok' => true]);
+});
+
 
     });
 
