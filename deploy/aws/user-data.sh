@@ -35,6 +35,6 @@ mkdir -p "${APP_DIR}"
 chown -R ubuntu:ubuntu "${APP_DIR}"
 
 cat >/etc/sudoers.d/taller-php <<'EOF'
-ubuntu ALL=(root) NOPASSWD: /bin/systemctl restart php8.4-fpm, /bin/systemctl restart nginx, /bin/systemctl restart taller-php-queue, /bin/systemctl restart taller-php-reverb, /bin/systemctl daemon-reload
+ubuntu ALL=(root) NOPASSWD: /bin/systemctl restart php8.4-fpm, /bin/systemctl restart php8.3-fpm, /bin/systemctl restart php-fpm, /bin/systemctl restart nginx, /bin/systemctl restart taller-php-queue, /bin/systemctl restart taller-php-reverb, /bin/systemctl daemon-reload
 EOF
 chmod 440 /etc/sudoers.d/taller-php
