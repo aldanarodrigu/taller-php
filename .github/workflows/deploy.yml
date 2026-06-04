@@ -38,8 +38,8 @@ jobs:
 
       - name: Trust deployment host
         run: |
-          mkdir -p "$HOME/.ssh"
-          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> "$HOME/.ssh/known_hosts"
+          mkdir -p .github/ssh
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" > .github/ssh/known_hosts
 
       - name: Deploy application
         env:
@@ -47,5 +47,6 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           DEPLOY_REF: ${{ github.event.inputs.ref || 'main' }}
+          DEPLOY_KNOWN_HOSTS: ${{ github.workspace }}/.github/ssh/known_hosts
         run: |
-          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" "set -e; cd '${DEPLOY_PATH}'; git fetch --all --tags --prune; if git show-ref --verify --quiet 'refs/remotes/origin/${DEPLOY_REF}'; then git checkout -B '${DEPLOY_REF}' 'origin/${DEPLOY_REF}'; git reset --hard 'origin/${DEPLOY_REF}'; else git checkout --detach '${DEPLOY_REF}'; git reset --hard '${DEPLOY_REF}'; fi; composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader; php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; sudo systemctl restart php8.4-fpm nginx taller-php-queue taller-php-reverb"
+          ssh -o "UserKnownHostsFile=${DEPLOY_KNOWN_HOSTS}" -o "StrictHostKeyChecking=yes" "${DEPLOY_USER}@${DEPLOY_HOST}" "set -e; cd '${DEPLOY_PATH}'; git fetch --all --tags --prune; if git show-ref --verify --quiet 'refs/remotes/origin/${DEPLOY_REF}'; then git checkout -B '${DEPLOY_REF}' 'origin/${DEPLOY_REF}'; git reset --hard 'origin/${DEPLOY_REF}'; else git checkout --detach '${DEPLOY_REF}'; git reset --hard '${DEPLOY_REF}'; fi; composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader; php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; sudo systemctl restart php8.4-fpm nginx taller-php-queue taller-php-reverb"
