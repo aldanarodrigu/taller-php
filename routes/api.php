@@ -13,6 +13,7 @@ use App\Http\Controllers\CalificacionController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\AgendaController;
+use App\Http\Controllers\NotificacionController;
 
 
 //AUTH
@@ -120,3 +121,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // AGENDA
 Route::get('/agenda/profesional/{id}', [AgendaController::class, 'profesional']);
+
+// NOTIFICACIONES
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/notificaciones',                       [NotificacionController::class, 'index']);
+    Route::post('/notificaciones/leer-todas',           [NotificacionController::class, 'markAllAsRead']);
+    Route::get('/notificaciones/{id}',                  [NotificacionController::class, 'show']);
+    Route::patch('/notificaciones/{id}/leer',           [NotificacionController::class, 'markAsRead']);
+    Route::delete('/notificaciones/{id}',               [NotificacionController::class, 'destroy']);
+});
