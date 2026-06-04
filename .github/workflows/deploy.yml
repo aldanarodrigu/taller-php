@@ -39,7 +39,8 @@ jobs:
       - name: Trust deployment host
         run: |
           mkdir -p .github/ssh
-          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" > .github/ssh/known_hosts
+          ssh-keyscan -T 15 -H "${{ secrets.DEPLOY_HOST }}" > .github/ssh/known_hosts || true
+          test -s .github/ssh/known_hosts || { echo "Unable to fetch host key for DEPLOY_HOST"; exit 1; }
 
       - name: Deploy application
         env:
