@@ -11,7 +11,8 @@ class Profesional extends Model
         'descripcion',
         'modalidad_atencion',
         'puntuacion_promedio',
-        'profesion'
+        'profesion',
+        'foto',
     ];
 
     public function user(){
