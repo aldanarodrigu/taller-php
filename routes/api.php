@@ -14,7 +14,7 @@ use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\NotificacionController;
-
+use App\Http\Controllers\ProfesionalController;
 
 //AUTH
     Route::post('/registrar', [AuthController::class, 'registrar']);
@@ -134,4 +134,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notificaciones/{id}',                  [NotificacionController::class, 'show']);
     Route::patch('/notificaciones/{id}/leer',           [NotificacionController::class, 'markAsRead']);
     Route::delete('/notificaciones/{id}',               [NotificacionController::class, 'destroy']);
+});
+
+//PROFESIONALES
+Route::middleware('auth:sanctum')->group(function () {
+    Route::put('/profesional', [ProfesionalController::class, 'editarProfesional']);
 });

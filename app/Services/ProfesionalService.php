@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Http\Request;
 use App\Repositories\ProfesionalRepository;
 use App\Models\Profesional;
+use App\Models\User;
 use Exception;
 
 class ProfesionalService{
@@ -23,6 +24,7 @@ class ProfesionalService{
         $datos = [
             'descripcion' => $request->descripcion,
             'profesion' => $request->profesion,
+            'modalidad_atencion' => $request->modalidad_atencion,
         ];
 
         if ($request->hasFile('foto')) {

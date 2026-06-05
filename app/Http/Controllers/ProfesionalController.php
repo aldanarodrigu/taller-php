@@ -18,7 +18,8 @@ class ProfesionalController extends Controller{
         $request->validate([
             'descripcion' => 'nullable|string',
             'profesion' => 'nullable|string|max:255',
-            'foto' => 'nullable|image|max:2048'
+            'foto' => 'nullable|image|max:2048',
+            'modalidad_atencion' => 'nullable|string'
         ]);
 
         $user = $request->user();
