@@ -18,6 +18,18 @@ class ReservaRepository {
     public function findAll(){
         return Reserva::all();
     }
+
+    public function findByClienteId(int $clienteId)
+    {
+        return Reserva::where('cliente_id', $clienteId)->get();
+    }
+
+    public function findByProfesionalId(int $profesionalId)
+    {
+        return Reserva::whereHas('servicio', function ($q) use ($profesionalId) {
+            $q->where('profesional_id', $profesionalId);
+        })->get();
+    }
     
     public function findByServicioAndFecha(int $servicioId, string $fecha){
         return Reserva::where('servicio_id', $servicioId)

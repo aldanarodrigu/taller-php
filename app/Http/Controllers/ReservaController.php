@@ -30,10 +30,10 @@ class ReservaController extends Controller
     }
     
     // GET /reservas
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $reservas = $this->reservaService->listar();
+            $reservas = $this->reservaService->listar($request);
             return response()->json($reservas, 200);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);

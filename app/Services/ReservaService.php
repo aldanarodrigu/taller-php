@@ -182,8 +182,22 @@ class ReservaService {
     }
     
     
-    public function listar()
+    public function listar(Request $request)
     {
+        $user = $request->user();
+
+        if ($user->esCliente()) {
+            $cliente = $user->cliente;
+            if (!$cliente) return collect([]);
+            return $this->reservaRepository->findByClienteId($cliente->id);
+        }
+
+        if ($user->esProfesional()) {
+            $profesional = $user->profesional;
+            if (!$profesional) return collect([]);
+            return $this->reservaRepository->findByProfesionalId($profesional->id);
+        }
+
         return $this->reservaRepository->findAll();
     }
     
