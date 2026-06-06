@@ -50,6 +50,7 @@ Route::get('/services', [ServicioController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/services/me', [ServicioController::class, 'misServicios']);
     Route::post('/services', [ServicioController::class, 'store']);
+    Route::get('/services/con-profesional', [ServicioController::class, 'indexConProfesional']);
     Route::put('/services/{id}', [ServicioController::class, 'update']);
     Route::delete('/services/{id}', [ServicioController::class, 'destroy']);
 });
