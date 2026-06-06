@@ -61,4 +61,35 @@ class ReservaController extends Controller
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
         }
     }
+    
+    public function confirmar(Request $request, int $id)
+    {
+        try {
+            $reserva = $this->reservaService->confirmar($request, $id);
+            return response()->json($reserva, 200);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
+        }
+    }
+    
+    public function iniciar(Request $request, int $id)
+    {
+        return response()->json(
+            $this->reservaService->iniciar($request, $id)
+        );
+    }
+
+    public function finalizar(Request $request, int $id)
+    {
+        return response()->json(
+            $this->reservaService->finalizar($request, $id)
+        );
+    }
+
+    public function noAsistida(Request $request, int $id)
+    {
+        return response()->json(
+            $this->reservaService->noAsistida($request, $id)
+        );
+    }
 }

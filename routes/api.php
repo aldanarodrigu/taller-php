@@ -82,7 +82,13 @@ Route::get('/disponibilidades/profesional/{id}', [DisponibilidadController::clas
 // RESERVAS
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reservas', [ReservaController::class, 'store']);
+    
     Route::patch('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
+    Route::patch('/reservas/{id}/confirmar', [ReservaController::class, 'confirmar']);
+    
+    Route::patch('/reservas/{id}/iniciar', [ReservaController::class, 'iniciar']);
+    Route::patch('/reservas/{id}/finalizar', [ReservaController::class, 'finalizar']);
+    Route::patch('/reservas/{id}/no-asistida', [ReservaController::class, 'noAsistida']);
 });
 
 Route::get('/reservas', [ReservaController::class, 'index']);
