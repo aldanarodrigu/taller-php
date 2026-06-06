@@ -249,4 +249,155 @@ class ReservaService {
 
         return $reserva;
     }
+    
+    public function confirmar(Request $request, int $id): Reserva
+    {
+        $usuario = $request->user();
+
+        if (!$usuario) {
+            throw new Exception('No autenticado', 401);
+        }
+
+        $cliente = $usuario->cliente;
+        $profesional = $usuario->profesional;
+
+        $reserva = $this->obtener($id);
+        $servicio = $this->servicioRepository->findById($reserva->servicio_id);
+
+        if (!$servicio) {
+            throw new Exception('El servicio asociado a la reserva no fue encontrado', 404);
+        }
+
+        $esClienteDueño = $cliente && $reserva->cliente_id === $cliente->id;
+
+        $esProfesionalDelServicio =
+            $profesional &&
+            $servicio->profesional_id === $profesional->id;
+
+        if (!$esClienteDueño && !$esProfesionalDelServicio) {
+            throw new Exception('No tenés permiso para confirmar esta reserva', 403);
+        }
+
+        if ($reserva->estado === 'confirmada') {
+            throw new Exception('La reserva ya está confirmada', 409);
+        }
+
+        if ($reserva->estado === 'cancelada') {
+            throw new Exception('No se puede confirmar una reserva cancelada', 409);
+        }
+
+        if (in_array($reserva->estado, ['finalizada', 'no_asistida'])) {
+            throw new Exception('No se puede confirmar una reserva finalizada o marcada como no asistida', 409);
+        }
+
+        $reserva = $this->reservaRepository->update($reserva, [
+            'estado' => 'confirmada'
+        ]);
+
+        event(new AgendaActualizada($reserva, 'confirmada'));
+
+        return $reserva;
+    }
+    
+    private function validarProfesionalDeReserva(Request $request,Reserva $reserva): void
+    {
+        $usuario = $request->user();
+
+        $profesional = $usuario->profesional;
+
+        if (!$profesional) {
+            throw new Exception(
+                'Solo un profesional puede realizar esta acción',
+                403
+            );
+        }
+
+        $servicio = $this->servicioRepository
+            ->findById($reserva->servicio_id);
+
+        if ($servicio->profesional_id !== $profesional->id) {
+            throw new Exception(
+                'No tiene permisos para esta reserva',
+                403
+            );
+        }
+    }
+    
+    public function iniciar(Request $request, int $id): Reserva
+    {
+        $reserva = $this->obtener($id);
+
+        $this->validarProfesionalDeReserva(
+            $request,
+            $reserva
+        );
+
+        if (!in_array(
+            $reserva->estado,
+            ['confirmada', 'pagada']
+        )) {
+            throw new Exception(
+                'La reserva debe estar confirmada o pagada',
+                409
+            );
+        }
+
+        $reserva = $this->reservaRepository->update(
+            $reserva,
+            ['estado' => 'en_curso']
+        );
+
+        return $reserva;
+    }
+    
+    public function finalizar(Request $request, int $id): Reserva
+    {
+        $reserva = $this->obtener($id);
+
+        $this->validarProfesionalDeReserva(
+            $request,
+            $reserva
+        );
+
+        if ($reserva->estado !== 'en_curso') {
+            throw new Exception(
+                'La reserva debe estar en curso',
+                409
+            );
+        }
+
+        $reserva = $this->reservaRepository->update(
+            $reserva,
+            ['estado' => 'finalizada']
+        );
+
+        return $reserva;
+    }
+    
+    public function noAsistida(Request $request,int $id): Reserva
+    {
+        $reserva = $this->obtener($id);
+
+        $this->validarProfesionalDeReserva(
+            $request,
+            $reserva
+        );
+
+        if (!in_array(
+            $reserva->estado,
+            ['confirmada', 'pagada']
+        )) {
+            throw new Exception(
+                'La reserva debe estar confirmada o pagada',
+                409
+            );
+        }
+
+        $reserva = $this->reservaRepository->update(
+            $reserva,
+            ['estado' => 'no_asistida']
+        );
+
+        return $reserva;
+    }
 }
