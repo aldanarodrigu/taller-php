@@ -30,10 +30,10 @@ class ReservaController extends Controller
     }
     
     // GET /reservas
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $reservas = $this->reservaService->listar();
+            $reservas = $this->reservaService->listar($request);
             return response()->json($reservas, 200);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
@@ -60,5 +60,36 @@ class ReservaController extends Controller
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
         }
+    }
+    
+    public function confirmar(Request $request, int $id)
+    {
+        try {
+            $reserva = $this->reservaService->confirmar($request, $id);
+            return response()->json($reserva, 200);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
+        }
+    }
+    
+    public function iniciar(Request $request, int $id)
+    {
+        return response()->json(
+            $this->reservaService->iniciar($request, $id)
+        );
+    }
+
+    public function finalizar(Request $request, int $id)
+    {
+        return response()->json(
+            $this->reservaService->finalizar($request, $id)
+        );
+    }
+
+    public function noAsistida(Request $request, int $id)
+    {
+        return response()->json(
+            $this->reservaService->noAsistida($request, $id)
+        );
     }
 }
