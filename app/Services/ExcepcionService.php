@@ -42,9 +42,15 @@ class ExcepcionService
         ]);
     }
 
-    public function listar()
+    public function listar(Request $request)
     {
-        return $this->excepcionRepository->findAll();
+        $profesional = $request->user()->profesional;
+
+        if (!$profesional) {
+            throw new Exception('El usuario no tiene perfil de profesional', 403);
+        }
+
+        return $this->excepcionRepository->findByProfesionalId($profesional->id);
     }
 
     public function obtener(int $id): Excepcion

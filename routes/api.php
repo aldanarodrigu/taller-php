@@ -64,7 +64,15 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
+<<<<<<< Updated upstream
 //DISPONIBILIDAD
+=======
+// DISPONIBILIDAD
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/disponibilidades', [DisponibilidadController::class, 'store']);
+    Route::delete('/disponibilidades/{id}', [DisponibilidadController::class, 'destroy']);
+});
+>>>>>>> Stashed changes
 
 Route::post('/disponibilidades', [DisponibilidadController::class, 'store']);
 Route::get('/disponibilidades/profesional/{id}', [DisponibilidadController::class, 'listarPorProfesional']);
@@ -86,10 +94,23 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
+<<<<<<< Updated upstream
 //EXCEPCIONES
 Route::post('/excepciones', [ExcepcionController::class, 'store']);
 Route::get('/excepciones', [ExcepcionController::class, 'index']);
 Route::get('/excepciones/{id}', [ExcepcionController::class, 'show']);
+=======
+// EXCEPCIONES
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/excepciones', [ExcepcionController::class, 'store']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/excepciones', [ExcepcionController::class, 'index']);
+    Route::get('/excepciones/{id}', [ExcepcionController::class, 'show']);
+    Route::delete('/excepciones/{id}', [ExcepcionController::class, 'destroy']);
+});
+>>>>>>> Stashed changes
 
 
 //RESEÑAS

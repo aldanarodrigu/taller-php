@@ -21,6 +21,11 @@ class ExcepcionRepository
         return Excepcion::all();
     }
 
+    public function findByProfesionalId(int $profesionalId)
+    {
+        return Excepcion::where('profesional_id', $profesionalId)->orderBy('fecha')->get();
+    }
+
     public function findByProfesionalAndFecha(int $profesionalId, string $fecha)
     {
         return Excepcion::where('profesional_id', $profesionalId)->where('fecha', $fecha)->get();

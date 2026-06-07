@@ -23,6 +23,34 @@ class DisponibilidadController extends Controller
         }
     }
     
+    // DELETE /disponibilidades/{id}
+    public function destroy(Request $request, int $id)
+    {
+        try {
+            $profesional = $request->user()->profesional;
+
+            if (!$profesional) {
+                return response()->json(['error' => 'No tenés perfil de profesional'], 403);
+            }
+
+            $disponibilidad = \App\Models\Disponibilidad::find($id);
+
+            if (!$disponibilidad) {
+                return response()->json(['error' => 'Disponibilidad no encontrada'], 404);
+            }
+
+            if ($disponibilidad->profesional_id !== $profesional->id) {
+                return response()->json(['error' => 'No tenés permiso para eliminar esta disponibilidad'], 403);
+            }
+
+            $disponibilidad->delete();
+
+            return response()->json(null, 204);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     // POST /disponibilidades
     public function store(Request $request)
     {
