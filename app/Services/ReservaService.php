@@ -11,6 +11,8 @@ use App\Events\AgendaActualizada;
 
 use App\Notifications\NuevaReservaNotification;
 
+use App\Jobs\NotificarCambioReserva;
+
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -164,10 +166,11 @@ class ReservaService {
 
                     event(new AgendaActualizada($reserva, 'creada'));
 
-
                     $usuarioProfesional = $servicio->profesional->user;
 
                     $usuarioProfesional->notify(new NuevaReservaNotification($reserva));
+                    
+                    NotificarCambioReserva::dispatch($reserva->id, 'creada');
 
                     return $reserva;
                 });
@@ -260,6 +263,8 @@ class ReservaService {
 
         $profesionalReserva = $servicio->profesional->user;
         $profesionalReserva->notify(new ReservaCanceladaNotificacion($reserva));
+        
+        NotificarCambioReserva::dispatch($reserva->id, 'cancelada');
 
         return $reserva;
     }
@@ -309,6 +314,8 @@ class ReservaService {
         ]);
 
         event(new AgendaActualizada($reserva, 'confirmada'));
+        
+        NotificarCambioReserva::dispatch($reserva->id, 'confirmada');
 
         return $reserva;
     }
@@ -360,7 +367,9 @@ class ReservaService {
             $reserva,
             ['estado' => 'en_curso']
         );
-
+        
+        NotificarCambioReserva::dispatch($reserva->id, 'en_curso');
+        
         return $reserva;
     }
     
@@ -384,6 +393,8 @@ class ReservaService {
             $reserva,
             ['estado' => 'finalizada']
         );
+        
+        NotificarCambioReserva::dispatch($reserva->id, 'finalizada');
 
         return $reserva;
     }
@@ -411,6 +422,8 @@ class ReservaService {
             $reserva,
             ['estado' => 'no_asistida']
         );
+        
+        NotificarCambioReserva::dispatch($reserva->id, 'no_asistida');
 
         return $reserva;
     }
