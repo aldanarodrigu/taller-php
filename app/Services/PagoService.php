@@ -8,6 +8,9 @@ use App\Repositories\PagoRepository;
 use Exception;
 use Illuminate\Http\Request;
 
+use App\Events\AgendaActualizada;
+use App\Jobs\NotificarCambioReserva;
+
 class PagoService
 {
     public function __construct(
@@ -46,6 +49,11 @@ class PagoService
             'pago_id' => $pago->id,
             'estado'  => 'pagada',
         ]);
+        
+        $reserva->refresh();
+
+        event(new AgendaActualizada($reserva, 'pagada'));
+        NotificarCambioReserva::dispatch($reserva->id, 'pagada');
 
         return $pago->load('reserva');
     }
@@ -89,7 +97,17 @@ class PagoService
         ]);
 
         if ($pago->reserva_id) {
-            $pago->reserva->update(['estado' => 'pagada']);
+            $reserva = $pago->reserva;
+
+            $reserva->update([
+                'pago_id' => $pago->id,
+                'estado' => 'pagada',
+            ]);
+
+            $reserva->refresh();
+
+            event(new AgendaActualizada($reserva, 'pagada'));
+            NotificarCambioReserva::dispatch($reserva->id, 'pagada');
         }
 
         return $pago->load('reserva');
