@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // DISPONIBILIDAD
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/disponibilidades', [DisponibilidadController::class, 'store']);
+    Route::delete('/disponibilidades/{id}', [DisponibilidadController::class, 'destroy']);
 });
 
 Route::get('/disponibilidades/profesional/{id}', [DisponibilidadController::class, 'listarPorProfesional']);
@@ -104,11 +105,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // EXCEPCIONES
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/excepciones', [ExcepcionController::class, 'index']);
+    Route::get('/excepciones/{id}', [ExcepcionController::class, 'show']);
     Route::post('/excepciones', [ExcepcionController::class, 'store']);
+    Route::delete('/excepciones/{id}', [ExcepcionController::class, 'destroy']);
 });
-
-Route::get('/excepciones', [ExcepcionController::class, 'index']);
-Route::get('/excepciones/{id}', [ExcepcionController::class, 'show']);
 
 
 //RESEÑAS

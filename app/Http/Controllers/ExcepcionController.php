@@ -32,13 +32,41 @@ class ExcepcionController extends Controller
     }
 
     // GET /excepciones
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $excepciones = $this->excepcionService->listar();
+            $excepciones = $this->excepcionService->listar($request);
             return response()->json($excepciones, 200);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
+        }
+    }
+
+    // DELETE /excepciones/{id}
+    public function destroy(Request $request, int $id)
+    {
+        try {
+            $profesional = $request->user()->profesional;
+
+            if (!$profesional) {
+                return response()->json(['error' => 'No tenés perfil de profesional'], 403);
+            }
+
+            $excepcion = \App\Models\Excepcion::find($id);
+
+            if (!$excepcion) {
+                return response()->json(['error' => 'Excepción no encontrada'], 404);
+            }
+
+            if ($excepcion->profesional_id !== $profesional->id) {
+                return response()->json(['error' => 'No tenés permiso para eliminar esta excepción'], 403);
+            }
+
+            $excepcion->delete();
+
+            return response()->json(null, 204);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
