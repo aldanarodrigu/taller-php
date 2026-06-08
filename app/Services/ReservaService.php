@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Services;
-use App\Notifications\ReservaCanceladaNotificacion;
 use App\Repositories\ReservaRepository;
 use App\Repositories\ServicioRepository;
 use App\Repositories\DisponibilidadRepository;
@@ -10,6 +9,8 @@ use App\Models\Reserva;
 use App\Events\AgendaActualizada;
 
 use App\Notifications\NuevaReservaNotification;
+use App\Notifications\ReservaConfirmadaNotificacion;
+use App\Notifications\ReservaCanceladaNotificacion;
 
 use App\Jobs\NotificarCambioReserva;
 
@@ -314,8 +315,12 @@ class ReservaService {
         ]);
 
         event(new AgendaActualizada($reserva, 'confirmada'));
-        
+
         NotificarCambioReserva::dispatch($reserva->id, 'confirmada');
+
+        $clienteReserva = $reserva->cliente->user;
+
+        $clienteReserva->notify(new ReservaConfirmadaNotificacion($reserva));
 
         return $reserva;
     }
