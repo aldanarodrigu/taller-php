@@ -16,6 +16,10 @@ class UsuariosController extends Controller{
     public function buscarPorId(int $id){
         $user = $this->usuarioService->buscarPorId($id);
 
+        if ($user->esProfesional()) {
+            $user->load('profesional');
+        }
+
         return response()->json($user, 200);
     }
 
@@ -27,10 +31,10 @@ class UsuariosController extends Controller{
 
     public function editarUsuario(Request $request, int $id){
         $request->validate([
-            'nombre' => 'required',
-            'apellido' => 'required',
-            'telefono' => 'required',
-            'email' => 'required|email'
+            'nombre' => 'nullable',
+            'apellido' => 'nullable',
+            'telefono' => 'nullable',
+            'email' => 'nullable|email'
         ]);
 
         $user = $this->usuarioService->editarUsuario($request, $id);
