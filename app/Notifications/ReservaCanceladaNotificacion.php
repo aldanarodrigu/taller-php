@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+use Illuminate\Notifications\Messages\MailMessage;
 
 use App\Models\Reserva;
 
@@ -20,7 +21,7 @@ class ReservaCanceladaNotificacion extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
     }
 
     public function toArray(object $notifiable): array
@@ -32,4 +33,17 @@ class ReservaCanceladaNotificacion extends Notification
             'reserva_id' => $this->reserva->id,
         ];
     }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('Reserva cancelada')
+            ->greeting('Hola ' . $notifiable->nombre . '!')
+            ->line('Te informamos que una reserva fue cancelada.')
+            ->line('Fecha: ' . $this->reserva->fecha)
+            ->line('Hora: ' . $this->reserva->hora_inicio)
+            ->action('Ver reservas', url('/reservas'))
+            ->line('Si tienes dudas, comunícate con nosotros.');
+    }
+
 }

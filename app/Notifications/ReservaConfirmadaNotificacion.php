@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+use Illuminate\Notifications\Messages\MailMessage;
 
 use App\Models\Reserva;
 
@@ -32,4 +33,19 @@ class ReservaConfirmadaNotificacion extends Notification
             'reserva_id' => $this->reserva->id,
         ];
     }
+
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('Reserva confirmada')
+            ->greeting('Hola ' . $notifiable->nombre . '!')
+            ->line('Tu reserva ha sido confirmada.')
+            ->line('Fecha: ' . $this->reserva->fecha)
+            ->line('Hora: ' . $this->reserva->hora_inicio)
+            ->line('Estado: ' . $this->reserva->estado)
+            ->action('Ver mis reservas', url('/reservas'))
+            ->line('Te esperamos.');
+    }
+
 }

@@ -22,7 +22,7 @@ class RecordatorioTurnoNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
     }
 
     public function toArray(object $notifiable): array
@@ -33,6 +33,19 @@ class RecordatorioTurnoNotification extends Notification
             'mensaje' => 'Tienes un turno próximo',
             'reserva_id' => $this->reserva->id,
         ];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('Recordatorio de turno')
+            ->greeting('Hola ' . $notifiable->nombre . '!')
+            ->line('Te recordamos que tienes un turno próximo.')
+            ->line('Fecha: ' . $this->reserva->fecha)
+            ->line('Hora: ' . $this->reserva->hora_inicio)
+            ->line('Estado: ' . $this->reserva->estado)
+            ->action('Ver mis reservas', url('/reservas'))
+            ->line('Te esperamos.');
     }
 
 }

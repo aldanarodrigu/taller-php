@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+use Illuminate\Notifications\Messages\MailMessage;
 
 use App\Models\Reserva;
 
@@ -20,7 +21,7 @@ class NuevaReservaNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
     }
 
     public function toArray(object $notifiable): array
@@ -32,4 +33,17 @@ class NuevaReservaNotification extends Notification
             'reserva_id' => $this->reserva->id,
         ];
     }
+
+    public function toMail(object $notifiable): MailMessage{
+        return (new MailMessage) 
+            ->subject('Nueva reserva creada') 
+            ->greeting('Hola ' . $notifiable->nombre . '!') 
+            ->line('Tu reserva fue creada correctamente.') 
+            ->line('Fecha: ' . $this->reserva->fecha) 
+            ->line('Hora: ' . $this->reserva->hora_inicio) 
+            ->line('Estado: ' . $this->reserva->estado) 
+            ->action('Ver mis reservas', url('/reservas')) 
+            ->line('Gracias por usar nuestro sistema.');
+    }
+
 }
