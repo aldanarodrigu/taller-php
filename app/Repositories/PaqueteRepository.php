@@ -50,6 +50,14 @@ class PaqueteRepository
         ]);
     }
 
+    public function listarPorCliente(int $clienteId)
+    {
+        return Paquete::with('servicios')
+            ->whereHas('clientes', fn($q) => $q->where('cliente_id', $clienteId))
+            ->with(['clientes' => fn($q) => $q->where('cliente_id', $clienteId)])
+            ->get();
+    }
+
     public function usarSesion(int $paqueteId, int $clienteId): void
     {
         $paquete = $this->findById($paqueteId);

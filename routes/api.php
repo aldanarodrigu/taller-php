@@ -52,15 +52,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // PAQUETES
 Route::get('/packages', [PaqueteController::class, 'index']);
-Route::get('/packages/{id}', [PaqueteController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/packages/mis-paquetes', [PaqueteController::class, 'misPaquetes']);
     Route::post('/packages', [PaqueteController::class, 'store']);
     Route::put('/packages/{id}', [PaqueteController::class, 'update']);
     Route::delete('/packages/{id}', [PaqueteController::class, 'destroy']);
     Route::post('/packages/{id}/comprar', [PaqueteController::class, 'comprar']);
     Route::post('/packages/{id}/usar-sesion', [PaqueteController::class, 'usarSesion']);
 });
+
+Route::get('/packages/{id}', [PaqueteController::class, 'show']);
 
 // DISPONIBILIDAD
 Route::get('/disponibilidades/profesional/{id}', [DisponibilidadController::class, 'listarPorProfesional']);
