@@ -7,6 +7,7 @@ use App\Repositories\DisponibilidadRepository;
 use App\Repositories\ExcepcionRepository;
 use App\Models\Reserva;
 use App\Events\AgendaActualizada;
+use App\Events\ReservationCreated;
 
 use App\Notifications\NuevaReservaNotification;
 use App\Notifications\ReservaConfirmadaNotificacion;
@@ -166,9 +167,9 @@ class ReservaService {
                     ]);
 
                     event(new AgendaActualizada($reserva, 'creada'));
+                    event(new ReservationCreated($reserva));
 
                     $usuarioProfesional = $servicio->profesional->user;
-
                     $usuarioProfesional->notify(new NuevaReservaNotification($reserva));
                     
                     NotificarCambioReserva::dispatch($reserva->id, 'creada');
