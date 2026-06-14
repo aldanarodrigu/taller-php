@@ -7,14 +7,11 @@ use App\Http\Controllers\DisponibilidadController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ExcepcionController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CalificacionController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\VideoController;
-use App\Http\Controllers\AgendaController;
-use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\ProfesionalController;
+use Illuminate\Support\Facades\Route;
 
 // HEALTH CHECK
 Route::get('/health', function () {
@@ -39,8 +36,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // SERVICIOS
 Route::get('/services', [ServicioController::class, 'index']);
-Route::get('/services/{id}', [ServicioController::class, 'show']);
 Route::get('/services/{id}/coordenadas', [ServicioController::class, 'coordenadas']);
+Route::get('/services/{id}/reviews', [CalificacionController::class, 'porServicio']);
+Route::get('/services/{id}', [ServicioController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/services/me', [ServicioController::class, 'misServicios']);
@@ -101,7 +99,6 @@ Route::middleware('auth:sanctum')->group(function () {
 // RESEÑAS
 Route::get('/reviews', [CalificacionController::class, 'index']);
 Route::get('/reviews/{id}', [CalificacionController::class, 'show']);
-Route::get('/services/{id}/reviews', [CalificacionController::class, 'porServicio']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [CalificacionController::class, 'store']);
@@ -113,18 +110,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/video/reservas/{id}/token', [VideoController::class, 'generarToken']);
     Route::post('/video/reservas/{id}/renovar-token', [VideoController::class, 'renovarToken']);
     Route::patch('/video/reservas/{id}/finalizar', [VideoController::class, 'finalizar']);
-});
-
-// AGENDA
-Route::get('/agenda/profesional/{id}', [AgendaController::class, 'profesional']);
-
-// NOTIFICACIONES
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/notificaciones', [NotificacionController::class, 'index']);
-    Route::post('/notificaciones/leer-todas', [NotificacionController::class, 'markAllAsRead']);
-    Route::get('/notificaciones/{id}', [NotificacionController::class, 'show']);
-    Route::patch('/notificaciones/{id}/leer', [NotificacionController::class, 'markAsRead']);
-    Route::delete('/notificaciones/{id}', [NotificacionController::class, 'destroy']);
 });
 
 // PROFESIONALES
