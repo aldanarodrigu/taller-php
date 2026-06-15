@@ -23,6 +23,7 @@ Route::get('/health', function () {
 // AUTH
 Route::post('/registrar', [AuthController::class, 'registrar']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/auth/google/complete', [AuthController::class, 'completeGoogleRegister']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'getAuthenticatedUser']);

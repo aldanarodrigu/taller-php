@@ -71,4 +71,30 @@ class AuthService{
         ]; 
     }
 
+    public function registrarConGoogle(array $data): array
+    {
+        $user = $this->userRepository->create([
+            'nombre'    => $data['nombre'],
+            'apellido'  => '-',
+            'telefono'  => '-',
+            'email'     => $data['email'],
+            'google_id' => $data['google_id'],
+            'password'  => bcrypt(uniqid()),
+            'role'      => $data['role'],
+        ]);
+
+        if ($user->esCliente()) {
+            $this->clienteRepository->create(['user_id' => $user->id]);
+        } else {
+            $this->profesionalRepository->create(['user_id' => $user->id]);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return [
+            'token' => $token,
+            'user'  => $user,
+        ];
+    }
+
 }
