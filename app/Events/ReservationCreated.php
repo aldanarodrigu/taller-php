@@ -10,6 +10,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Support\Facades\Log;
 
 class ReservationCreated implements ShouldBroadcast
 {
@@ -41,6 +42,7 @@ class ReservationCreated implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
+        Log::info('ReservationCreated BROADCAST');
         return [
             'reservation_id' => $this->reserva->id,
             'servicio_id'    => $this->reserva->servicio_id,
