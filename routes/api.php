@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UsuariosController;
 use App\Http\Controllers\ServicioController;
@@ -18,6 +19,11 @@ use Illuminate\Support\Facades\Route;
 // HEALTH CHECK
 Route::get('/health', function () {
     return response()->json(['ok' => true]);
+});
+
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::get('/admin/users', [AdminUserController::class, 'index']);
 });
 
 // AUTH

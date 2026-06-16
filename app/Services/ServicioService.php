@@ -6,6 +6,7 @@ use App\Models\Servicio;
 use App\Repositories\ServicioRepository;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ServicioService
 {
@@ -26,6 +27,10 @@ class ServicioService
             throw new Exception('El usuario no tiene perfil de profesional', 403);
         }
 
+        $videollamada = $request->has('videollamada')
+            ? $this->toDatabaseBoolean($request->boolean('videollamada'))
+            : $this->toDatabaseBoolean(false);
+
         return $this->servicioRepository->create([
             'profesional_id'           => $profesional->id,
             'nombre'                   => $request->nombre,
@@ -34,7 +39,7 @@ class ServicioService
             'modalidad'                => $request->modalidad,
             'precio'                   => $request->precio,
             'duracion_minutos'         => $request->duracion_minutos,
-            'videollamada'             => $request->videollamada ?? false,
+            'videollamada'             => $videollamada,
             'cancelacion_horas_minimas' => $request->cancelacion_horas_minimas,
             'direccion'                => $request->direccion,
             'latitud'                  => $request->latitud,
@@ -73,12 +78,22 @@ class ServicioService
         $servicio = $this->obtener($id);
         $this->verificarPropietario($request, $servicio);
 
-        return $this->servicioRepository->update($servicio, $request->only([
+        $data = $request->only([
             'nombre', 'descripcion', 'tipo', 'modalidad',
             'precio', 'duracion_minutos', 'activo',
             'videollamada', 'cancelacion_horas_minimas',
             'direccion', 'latitud', 'longitud',
-        ]));
+        ]);
+
+        if ($request->has('activo')) {
+            $data['activo'] = $this->toDatabaseBoolean($request->boolean('activo'));
+        }
+
+        if ($request->has('videollamada')) {
+            $data['videollamada'] = $this->toDatabaseBoolean($request->boolean('videollamada'));
+        }
+
+        return $this->servicioRepository->update($servicio, $data);
     }
 
     public function eliminar(Request $request, int $id): void
@@ -110,5 +125,12 @@ class ServicioService
         if (!$profesional || $servicio->profesional_id !== $profesional->id) {
             throw new Exception('No tenés permiso para modificar este servicio', 403);
         }
+    }
+
+    private function toDatabaseBoolean(bool $value): bool|string
+    {
+        return DB::connection()->getDriverName() === 'pgsql'
+            ? ($value ? 'true' : 'false')
+            : $value;
     }
 }

@@ -46,7 +46,7 @@ class ServicioController extends Controller
             $servicio = $this->servicioService->crear($request);
             return response()->json($servicio, 201);
         } catch (Exception $e) {
-            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
