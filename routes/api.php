@@ -46,9 +46,6 @@ Route::middleware('auth:sanctum')->group(function () {
 // SERVICIOS
 Route::get('/services', [ServicioController::class, 'index']);
 Route::get('/services/con-profesional', [ServicioController::class, 'indexConProfesional']);
-Route::get('/services/{id}/coordenadas', [ServicioController::class, 'coordenadas']);
-Route::get('/services/{id}/reviews', [CalificacionController::class, 'porServicio']);
-Route::get('/services/{id}', [ServicioController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/services/me', [ServicioController::class, 'misServicios']);
@@ -56,6 +53,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/services/{id}', [ServicioController::class, 'update']);
     Route::delete('/services/{id}', [ServicioController::class, 'destroy']);
 });
+
+Route::get('/services/{id}/coordenadas', [ServicioController::class, 'coordenadas']);
+Route::get('/services/{id}/reviews', [CalificacionController::class, 'porServicio']);
+Route::get('/services/{id}', [ServicioController::class, 'show']);
 
 // PAQUETES
 Route::get('/packages', [PaqueteController::class, 'index']);
