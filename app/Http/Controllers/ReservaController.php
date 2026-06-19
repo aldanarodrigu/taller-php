@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cliente;
 use App\Services\ReservaService;
 use Exception;
 use Illuminate\Http\Request;
@@ -114,5 +115,44 @@ class ReservaController extends Controller
                 $e->getCode() ?: 400
             );
         }
+    }
+
+    // GET /reservas/mis-clientes
+    public function misClientes(Request $request)
+    {
+        $profesional = $request->user()->profesional;
+
+        if (!$profesional) {
+            return response()->json(['error' => 'No tenés perfil de profesional'], 403);
+        }
+
+        $clientes = Cliente::whereHas('reservas', function ($q) use ($profesional) {
+            $q->whereHas('servicio', fn($s) => $s->where('profesional_id', $profesional->id));
+        })
+        ->with([
+            'user',
+            'reservas' => function ($q) use ($profesional) {
+                $q->whereHas('servicio', fn($s) => $s->where('profesional_id', $profesional->id))
+                  ->with('servicio:id,nombre')
+                  ->orderBy('fecha', 'desc')
+                  ->orderBy('id', 'desc');
+            }
+        ])
+        ->get()
+        ->map(fn($c) => [
+            'id'       => $c->id,
+            'nombre'   => $c->user->nombre,
+            'apellido' => $c->user->apellido,
+            'email'    => $c->user->email,
+            'reservas' => $c->reservas->map(fn($r) => [
+                'id'             => $r->id,
+                'fecha'          => $r->fecha,
+                'hora_inicio'    => $r->hora_inicio,
+                'estado'         => $r->estado,
+                'servicio_nombre'=> $r->servicio?->nombre,
+            ]),
+        ]);
+
+        return response()->json($clientes);
     }
 }

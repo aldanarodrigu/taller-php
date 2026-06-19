@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // RESERVAS
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reservas', [ReservaController::class, 'index']);
+    Route::get('/reservas/mis-clientes', [ReservaController::class, 'misClientes']);
     Route::get('/reservas/{id}', [ReservaController::class, 'show']);
     Route::post('/reservas', [ReservaController::class, 'store']);
     Route::patch('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
