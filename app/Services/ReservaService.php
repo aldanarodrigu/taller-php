@@ -180,9 +180,9 @@ class ReservaService
                             );
                         }
                     }
-
-                    $reservasDelDia = $this->reservaRepository->findByProfesionalFechaAndEstadosActivosForUpdate($servicio->profesional_id, $request->fecha);
-
+                    
+                    $reservasDelDia = $this->reservaRepository->findByProfesionalFechaAndEstadosActivosForUpdate($servicio->profesional_id,$request->fecha);
+                    
                     $buffer = $disponibilidadUsada->buffer ?? 0;
 
                     $horaFinConBuffer = clone $horaFin;
@@ -1025,12 +1025,7 @@ class ReservaService
                                 );
                             }
 
-                            $reservasDelDia =
-                                $this->reservaRepository
-                                    ->findByServicioFechaAndEstadosActivosForUpdate(
-                                        $servicio->id,
-                                        $request->fecha
-                                    );
+                            $reservasDelDia =$this->reservaRepository->findByProfesionalFechaAndEstadosActivosForUpdate($servicio->profesional_id,$request->fecha);
 
                             foreach (
                                 $reservasDelDia
