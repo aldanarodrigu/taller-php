@@ -57,12 +57,18 @@ class ReservaRepository {
     ){
         return Reserva::where('servicio_id', $servicioId)
             ->where('fecha', $fecha)
-            ->whereIn('estado', [
-                'pendiente',
-                'confirmada',
-                'pagada',
-                'en curso'
-            ])
+            ->whereIn('estado', ['pendiente', 'confirmada', 'pagada', 'en_curso'])
+            ->lockForUpdate()
+            ->get();
+    }
+
+    public function findByProfesionalFechaAndEstadosActivosForUpdate(
+        int $profesionalId,
+        string $fecha
+    ){
+        return Reserva::whereHas('servicio', fn($q) => $q->where('profesional_id', $profesionalId))
+            ->where('fecha', $fecha)
+            ->whereIn('estado', ['pendiente', 'confirmada', 'pagada', 'en_curso'])
             ->lockForUpdate()
             ->get();
     }

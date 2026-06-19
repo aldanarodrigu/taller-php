@@ -66,6 +66,7 @@ class CalificacionService
         return $this->calificacionRepository->create([
             'reserva_id' => $request->reserva_id,
             'cliente_id' => $cliente->id,
+            'servicio_id' => $reserva->servicio_id,
             'puntuacion' => $request->puntuacion,
             'comentario' => $request->comentario,
         ]);

@@ -11,6 +11,7 @@ class Calificacion extends Model
     protected $fillable = [
         'reserva_id',
         'cliente_id',
+        'servicio_id',
         'puntuacion',
         'comentario',
     ];
