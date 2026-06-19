@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Servicio;
 use App\Repositories\ServicioRepository;
+use App\Services\ActividadService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\DB;
 class ServicioService
 {
     public function __construct(
-        private ServicioRepository $servicioRepository
+        private ServicioRepository $servicioRepository,
+        private ActividadService $actividadService,
     ) {}
 
     public function listar(array $filtros)
@@ -31,20 +33,28 @@ class ServicioService
             ? $this->toDatabaseBoolean($request->boolean('videollamada'))
             : $this->toDatabaseBoolean(false);
 
-        return $this->servicioRepository->create([
-            'profesional_id'           => $profesional->id,
-            'nombre'                   => $request->nombre,
-            'descripcion'              => $request->descripcion,
-            'tipo'                     => $request->tipo,
-            'modalidad'                => $request->modalidad,
-            'precio'                   => $request->precio,
-            'duracion_minutos'         => $request->duracion_minutos,
-            'videollamada'             => $videollamada,
+        $servicio = $this->servicioRepository->create([
+            'profesional_id'            => $profesional->id,
+            'nombre'                    => $request->nombre,
+            'descripcion'               => $request->descripcion,
+            'tipo'                      => $request->tipo,
+            'modalidad'                 => $request->modalidad,
+            'precio'                    => $request->precio,
+            'duracion_minutos'          => $request->duracion_minutos,
+            'videollamada'              => $videollamada,
             'cancelacion_horas_minimas' => $request->cancelacion_horas_minimas,
-            'direccion'                => $request->direccion,
-            'latitud'                  => $request->latitud,
-            'longitud'                 => $request->longitud,
+            'direccion'                 => $request->direccion,
+            'latitud'                   => $request->latitud,
+            'longitud'                  => $request->longitud,
         ]);
+
+        $this->actividadService->registrar(
+            $request->user()->id,
+            'CREAR_SERVICIO',
+            'Creó el servicio "' . $servicio->nombre . '"'
+        );
+
+        return $servicio;
     }
 
     public function obtenerServiciosUsuario(Request $request)

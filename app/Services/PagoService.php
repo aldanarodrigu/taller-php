@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Pago;
 use App\Models\Reserva;
+use App\Services\ActividadService;
 use App\Repositories\PagoRepository;
 use Exception;
 use Illuminate\Http\Request;
@@ -14,7 +15,8 @@ use App\Jobs\NotificarCambioReserva;
 class PagoService
 {
     public function __construct(
-        private PagoRepository $pagoRepository
+        private PagoRepository $pagoRepository,
+        private ActividadService $actividadService,
     ) {}
 
     public function crear(Request $request): Pago
@@ -51,6 +53,8 @@ class PagoService
         ]);
         
         $reserva->refresh();
+
+        $this->actividadService->registrar($usuario->id,'PAGO','Realizó el pago de la reserva #' . $reserva->id);
 
         event(new AgendaActualizada($reserva, 'pagada'));
         NotificarCambioReserva::dispatch($reserva->id, 'pagada');

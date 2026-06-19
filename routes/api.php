@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ActividadController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UsuariosController;
@@ -21,9 +22,13 @@ Route::get('/health', function () {
     return response()->json(['ok' => true]);
 });
 
-
+// ADMIN
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    //users
     Route::get('/admin/users', [AdminUserController::class, 'index']);
+    Route::get('/admin/users/{user}', [AdminUserController::class, 'show']);
+    //actividades
+    Route::get('/admin/actividades', [ActividadController::class, 'index']);
 });
 
 // AUTH

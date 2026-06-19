@@ -11,6 +11,7 @@ use App\Models\Reserva;
 
 use App\Events\AgendaActualizada;
 use App\Events\ReservationCreated;
+use App\Services\ActividadService;
 
 use App\Notifications\NuevaReservaNotification;
 use App\Notifications\ReservaConfirmadaNotificacion;
@@ -30,7 +31,8 @@ class ReservaService
         private ReservaRepository $reservaRepository,
         private ServicioRepository $servicioRepository,
         private DisponibilidadRepository $disponibilidadRepository,
-        private ExcepcionRepository $excepcionRepository
+        private ExcepcionRepository $excepcionRepository,
+        private ActividadService $actividadService,
     ) {}
 
     public function crear(Request $request): Reserva
@@ -286,6 +288,9 @@ class ReservaService
                     $usuarioProfesional->notify(new NuevaReservaNotification($reserva));
 
                     NotificarCambioReserva::dispatch($reserva->id,'creada');
+         
+                    $this->actividadService->registrar($request->user()->id,'RESERVA', 'Reservó el servicio ' . $servicio->nombre);
+
 
                     return $reserva;
                 });
