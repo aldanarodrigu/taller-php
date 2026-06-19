@@ -359,12 +359,9 @@ class ReservaService {
             $reserva
         );
 
-        if (!in_array(
-            $reserva->estado,
-            ['confirmada', 'pagada']
-        )) {
+        if ($reserva->estado !== 'pagada') {
             throw new Exception(
-                'La reserva debe estar confirmada o pagada',
+                'La reserva debe estar pagada para poder iniciarla',
                 409
             );
         }
