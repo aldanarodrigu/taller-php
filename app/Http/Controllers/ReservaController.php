@@ -92,4 +92,27 @@ class ReservaController extends Controller
             $this->reservaService->noAsistida($request, $id)
         );
     }
+    
+    // PATCH /reservas/{id}/reprogramar
+    public function reprogramar(Request $request, int $id)
+    {
+        $request->validate([
+            'fecha' => 'required|date',
+            'hora_inicio' => 'required|date_format:H:i',
+        ]);
+
+        try {
+            $reserva = $this->reservaService->reprogramar($request, $id);
+
+            return response()->json([
+                'mensaje' => 'Reserva reprogramada correctamente',
+                'reserva' => $reserva,
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json(
+                ['error' => $e->getMessage()],
+                $e->getCode() ?: 400
+            );
+        }
+    }
 }

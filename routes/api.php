@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/reservas/{id}/iniciar', [ReservaController::class, 'iniciar']);
     Route::patch('/reservas/{id}/finalizar', [ReservaController::class, 'finalizar']);
     Route::patch('/reservas/{id}/no-asistida', [ReservaController::class, 'noAsistida']);
+    Route::patch('/reservas/{id}/reprogramar',[ReservaController::class, 'reprogramar']);
 });
 
 // PAGOS
