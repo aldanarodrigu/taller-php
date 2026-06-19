@@ -181,12 +181,7 @@ class ReservaService
                         }
                     }
 
-                    $reservasDelDia =
-                        $this->reservaRepository
-                            ->findByServicioFechaAndEstadosActivosForUpdate(
-                                $servicio->id,
-                                $request->fecha
-                            );
+                    $reservasDelDia = $this->reservaRepository->findByProfesionalFechaAndEstadosActivosForUpdate($servicio->profesional_id, $request->fecha);
 
                     $buffer = $disponibilidadUsada->buffer ?? 0;
 
@@ -590,12 +585,9 @@ class ReservaService
             $reserva
         );
 
-        if (!in_array(
-            $reserva->estado,
-            ['confirmada', 'pagada']
-        )) {
+        if ($reserva->estado !== 'pagada') {
             throw new Exception(
-                'La reserva debe estar confirmada o pagada',
+                'La reserva debe estar pagada para poder iniciarla',
                 409
             );
         }

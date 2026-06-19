@@ -63,12 +63,20 @@ class CalificacionService
             throw new Exception('Ya calificaste esta reserva', 422);
         }
 
-        return $this->calificacionRepository->create([
+        $calificacion = $this->calificacionRepository->create([
             'reserva_id' => $request->reserva_id,
             'cliente_id' => $cliente->id,
+            'servicio_id' => $reserva->servicio_id,
             'puntuacion' => $request->puntuacion,
             'comentario' => $request->comentario,
         ]);
+
+        $profesional = $reserva->servicio->profesional;
+        $promedio = Calificacion::whereHas('reserva.servicio', fn($q) => $q->where('profesional_id', $profesional->id))
+            ->avg('puntuacion');
+        $profesional->update(['puntuacion_promedio' => round($promedio, 1)]);
+
+        return $calificacion;
     }
 
     public function eliminar(int $id): void
