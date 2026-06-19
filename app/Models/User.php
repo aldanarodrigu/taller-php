@@ -11,6 +11,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 use App\Models\Cliente;
 use App\Models\Profesional;
+use App\Models\Actividad;
 
     class User extends Authenticatable
     {
@@ -59,6 +60,10 @@ use App\Models\Profesional;
 
         public function esProfesional(){
             return $this->role == 'profesional';
+        }
+
+        public function actividades(){
+            return $this->hasMany(Actividad::class, 'usuario_id');
         }
 
     }
