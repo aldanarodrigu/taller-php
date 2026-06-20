@@ -12,6 +12,7 @@ class Reserva extends Model
         'cliente_id',
         'servicio_id',
         'pago_id',
+        'paquete_cliente_id',
         'fecha',
         'hora_inicio',
         'hora_fin',
@@ -34,5 +35,10 @@ class Reserva extends Model
     {
         return $this->belongsTo(Pago::class);
     }
-    
+
+    public function paqueteCliente()
+    {
+        return $this->belongsTo(\App\Models\PaqueteCliente::class, 'paquete_cliente_id');
+    }
+
 }

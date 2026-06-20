@@ -52,6 +52,12 @@ Route::get('/packages', [PaqueteController::class, 'index']);
 Route::get('/packages/{id}', [PaqueteController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
+<<<<<<< Updated upstream
+=======
+    Route::get('/packages/mis-paquetes', [PaqueteController::class, 'misPaquetes']);
+    Route::get('/packages/mis-paquetes-profesional', [PaqueteController::class, 'misPaquetesProfesional']);
+    Route::get('/packages/para-servicio/{servicio_id}', [PaqueteController::class, 'paraServicio']);
+>>>>>>> Stashed changes
     Route::post('/packages', [PaqueteController::class, 'store']);
     Route::put('/packages/{id}', [PaqueteController::class, 'update']);
     Route::delete('/packages/{id}', [PaqueteController::class, 'destroy']);

@@ -5,6 +5,11 @@ use App\Repositories\ReservaRepository;
 use App\Repositories\ServicioRepository;
 use App\Repositories\DisponibilidadRepository;
 use App\Repositories\ExcepcionRepository;
+<<<<<<< Updated upstream
+=======
+
+use App\Models\PaqueteCliente;
+>>>>>>> Stashed changes
 use App\Models\Reserva;
 use Exception;
 use Illuminate\Http\Request;
@@ -21,8 +26,292 @@ class ReservaService {
     public function crear(Request $request): Reserva{
         $cliente = $request->user()->cliente;
 
+<<<<<<< Updated upstream
         if (!$cliente) {
             throw new Exception('El usuario no tiene perfil de cliente', 403);
+=======
+    public function crear(Request $request): Reserva
+    {
+        $lockKey =
+            'reserva:servicio_' . $request->servicio_id .
+            ':fecha_' . $request->fecha;
+
+        $lock = Cache::lock($lockKey, 10);
+
+        try {
+            return $lock->block(5, function () use ($request) {
+                return DB::transaction(function () use ($request) {
+                    $cliente = $request->user()->cliente;
+
+                    if (!$cliente) {
+                        throw new Exception(
+                            'El usuario no tiene perfil de cliente',
+                            403
+                        );
+                    }
+
+                    $servicio = $this->servicioRepository->findById(
+                        $request->servicio_id
+                    );
+
+                    if (!$servicio) {
+                        throw new Exception(
+                            'El servicio no fue encontrado',
+                            404
+                        );
+                    }
+                    
+                    $fechaHoraSolicitada = new \DateTime(
+                        $request->fecha . ' ' . $request->hora_inicio
+                    );
+
+                    if ($fechaHoraSolicitada <= new \DateTime()) {
+                        throw new Exception(
+                            'No se puede crear una reserva en una fecha u hora pasada',
+                            409
+                        );
+                    }
+
+                    $horaInicio = new \DateTime($request->hora_inicio);
+
+                    $horaInicioTexto = $horaInicio->format('H:i');
+
+                    $horaFin = clone $horaInicio;
+                    $horaFin->modify(
+                        '+' . $servicio->duracion_minutos . ' minutes'
+                    );
+
+                    $horaFinTexto = $horaFin->format('H:i');
+
+                    $fecha = new \DateTime($request->fecha);
+
+                    $dias = [
+                        'Monday' => 'lunes',
+                        'Tuesday' => 'martes',
+                        'Wednesday' => 'miércoles',
+                        'Thursday' => 'jueves',
+                        'Friday' => 'viernes',
+                        'Saturday' => 'sabado',
+                        'Sunday' => 'domingo',
+                    ];
+
+                    $diaSemana = $dias[$fecha->format('l')];
+
+                    $disponibilidades =
+                        $this->disponibilidadRepository
+                            ->findByProfesionalAndDia(
+                                $servicio->profesional_id,
+                                $diaSemana
+                            );
+
+                    $hayDisponibilidad = false;
+                    $disponibilidadUsada = null;
+
+                    foreach ($disponibilidades as $disponibilidad) {
+                        $inicioDisponibilidad = (
+                            new \DateTime($disponibilidad->hora_inicio)
+                        )->format('H:i');
+
+                        $finDisponibilidad = (
+                            new \DateTime($disponibilidad->hora_fin)
+                        )->format('H:i');
+
+                        if (
+                            $horaInicioTexto >= $inicioDisponibilidad &&
+                            $horaFinTexto <= $finDisponibilidad
+                        ) {
+                            $hayDisponibilidad = true;
+                            $disponibilidadUsada = $disponibilidad;
+                            break;
+                        }
+                    }
+
+                    if (!$hayDisponibilidad) {
+                        throw new Exception(
+                            'El horario solicitado no está dentro de la disponibilidad del profesional',
+                            409
+                        );
+                    }
+
+                    $excepciones =
+                        $this->excepcionRepository
+                            ->findByProfesionalAndFecha(
+                                $servicio->profesional_id,
+                                $request->fecha
+                            );
+
+                    foreach ($excepciones as $excepcion) {
+                        if (!in_array(
+                            $excepcion->tipo,
+                            ['bloqueo', 'feriado', 'licencia', 'pausa']
+                        )) {
+                            continue;
+                        }
+
+                        if (
+                            $excepcion->hora_inicio === null ||
+                            $excepcion->hora_fin === null
+                        ) {
+                            throw new Exception(
+                                'El profesional no está disponible en esa fecha',
+                                409
+                            );
+                        }
+
+                        $inicioExcepcion = (
+                            new \DateTime($excepcion->hora_inicio)
+                        )->format('H:i');
+
+                        $finExcepcion = (
+                            new \DateTime($excepcion->hora_fin)
+                        )->format('H:i');
+
+                        $seSuperponeConExcepcion =
+                            $horaInicioTexto < $finExcepcion &&
+                            $horaFinTexto > $inicioExcepcion;
+
+                        if ($seSuperponeConExcepcion) {
+                            throw new Exception(
+                                'El horario solicitado coincide con una excepción del profesional',
+                                409
+                            );
+                        }
+                    }
+                    
+                    $reservasDelDia = $this->reservaRepository->findByProfesionalFechaAndEstadosActivosForUpdate($servicio->profesional_id,$request->fecha);
+                    
+                    $buffer = $disponibilidadUsada->buffer ?? 0;
+
+                    $horaFinConBuffer = clone $horaFin;
+                    $horaFinConBuffer->modify(
+                        '+' . $buffer . ' minutes'
+                    );
+
+                    $horaFinConBufferTexto =
+                        $horaFinConBuffer->format('H:i');
+
+                    $finDisponibilidadUsada = (
+                        new \DateTime($disponibilidadUsada->hora_fin)
+                    )->format('H:i');
+
+                    if (
+                        $horaFinConBufferTexto >
+                        $finDisponibilidadUsada
+                    ) {
+                        throw new Exception(
+                            'La reserva más el buffer excede el horario disponible del profesional',
+                            409
+                        );
+                    }
+
+                    if (
+                        $disponibilidadUsada->hora_inicio_pausa !== null &&
+                        $disponibilidadUsada->hora_fin_pausa !== null
+                    ) {
+                        $inicioPausa = (
+                            new \DateTime(
+                                $disponibilidadUsada->hora_inicio_pausa
+                            )
+                        )->format('H:i');
+
+                        $finPausa = (
+                            new \DateTime(
+                                $disponibilidadUsada->hora_fin_pausa
+                            )
+                        )->format('H:i');
+
+                        $seSuperponeConPausa =
+                            $horaInicioTexto < $finPausa &&
+                            $horaFinTexto > $inicioPausa;
+
+                        if ($seSuperponeConPausa) {
+                            throw new Exception(
+                                'El horario solicitado coincide con la pausa del profesional',
+                                409
+                            );
+                        }
+                    }
+
+                    foreach ($reservasDelDia as $reservaExistente) {
+                        $inicioReservaExistente = (
+                            new \DateTime(
+                                $reservaExistente->hora_inicio
+                            )
+                        )->format('H:i');
+
+                        $finReservaExistente = new \DateTime(
+                            $reservaExistente->hora_fin
+                        );
+
+                        $finReservaExistente->modify(
+                            '+' . $buffer . ' minutes'
+                        );
+
+                        $finReservaExistenteConBuffer =
+                            $finReservaExistente->format('H:i');
+
+                        $seSuperpone =
+                            $horaInicioTexto <
+                                $finReservaExistenteConBuffer &&
+                            $horaFinConBufferTexto >
+                                $inicioReservaExistente;
+
+                        if ($seSuperpone) {
+                            throw new Exception(
+                                'Ya existe una reserva en ese horario o dentro del buffer requerido',
+                                409
+                            );
+                        }
+                    }
+
+                    $paqueteClienteId = null;
+                    if ($request->filled('paquete_cliente_id')) {
+                        $pc = PaqueteCliente::where('id', $request->paquete_cliente_id)
+                            ->where('cliente_id', $cliente->id)
+                            ->where('estado', 'activo')
+                            ->whereHas('paquete.servicios', fn($q) => $q->where('servicios.id', $servicio->id))
+                            ->first();
+
+                        if (!$pc) {
+                            throw new Exception('El paquete seleccionado no es válido para este servicio', 422);
+                        }
+                        if ($pc->sesiones_disponibles <= 0) {
+                            throw new Exception('No tenés sesiones disponibles en ese paquete', 422);
+                        }
+
+                        $paqueteClienteId = $pc->id;
+                    }
+
+                    $reserva = $this->reservaRepository->create([
+                        'cliente_id' => $cliente->id,
+                        'servicio_id' => $servicio->id,
+                        'pago_id' => null,
+                        'paquete_cliente_id' => $paqueteClienteId,
+                        'fecha' => $request->fecha,
+                        'hora_inicio' => $horaInicioTexto,
+                        'hora_fin' => $horaFinTexto,
+                        'estado' => 'pendiente',
+                    ]);
+
+                    event(new AgendaActualizada($reserva,'creada'));
+
+                    event(new ReservationCreated($reserva));
+
+                    $usuarioProfesional = $servicio->profesional->user;
+
+                    $usuarioProfesional->notify(new NuevaReservaNotification($reserva));
+
+                    NotificarCambioReserva::dispatch($reserva->id,'creada');
+
+                    return $reserva;
+                });
+            });
+        } catch (LockTimeoutException $e) {
+            throw new Exception(
+                'La reserva está siendo procesada por otra solicitud, intentá nuevamente',
+                409
+            );
+>>>>>>> Stashed changes
         }
         
         $servicio = $this->servicioRepository->findById($request->servicio_id);
@@ -201,4 +490,680 @@ class ReservaService {
             'estado' => 'cancelada'
         ]);
     }
+<<<<<<< Updated upstream
 }
+=======
+
+    public function confirmar(
+        Request $request,
+        int $id
+    ): Reserva {
+        $usuario = $request->user();
+
+        if (!$usuario) {
+            throw new Exception(
+                'No autenticado',
+                401
+            );
+        }
+
+        $cliente = $usuario->cliente;
+        $profesional = $usuario->profesional;
+
+        $reserva = $this->obtener($id);
+
+        $servicio = $this->servicioRepository->findById(
+            $reserva->servicio_id
+        );
+
+        if (!$servicio) {
+            throw new Exception(
+                'El servicio asociado a la reserva no fue encontrado',
+                404
+            );
+        }
+
+        $esClienteDueño =
+            $cliente &&
+            $reserva->cliente_id === $cliente->id;
+
+        $esProfesionalDelServicio =
+            $profesional &&
+            $servicio->profesional_id === $profesional->id;
+
+        if (
+            !$esClienteDueño &&
+            !$esProfesionalDelServicio
+        ) {
+            throw new Exception(
+                'No tenés permiso para confirmar esta reserva',
+                403
+            );
+        }
+
+        if ($reserva->estado === 'confirmada') {
+            throw new Exception(
+                'La reserva ya está confirmada',
+                409
+            );
+        }
+
+        if ($reserva->estado === 'pagada') {
+            throw new Exception(
+                'No se puede confirmar una reserva que ya está pagada',
+                409
+            );
+        }
+
+        if (!in_array($reserva->estado, ['pendiente'])) {
+            throw new Exception(
+                'La reserva no se encuentra en un estado confirmable',
+                409
+            );
+        }
+
+        $reserva = $this->reservaRepository->update(
+            $reserva,
+            [
+                'estado' => 'confirmada',
+            ]
+        );
+
+        event(
+            new AgendaActualizada(
+                $reserva,
+                'confirmada'
+            )
+        );
+
+        NotificarCambioReserva::dispatch(
+            $reserva->id,
+            'confirmada'
+        );
+
+        $clienteReserva = $reserva->cliente->user;
+
+        $clienteReserva->notify(
+            new ReservaConfirmadaNotificacion($reserva)
+        );
+
+        return $reserva;
+    }
+
+    private function validarProfesionalDeReserva(
+        Request $request,
+        Reserva $reserva
+    ): void {
+        $usuario = $request->user();
+        $profesional = $usuario->profesional;
+
+        if (!$profesional) {
+            throw new Exception(
+                'Solo un profesional puede realizar esta acción',
+                403
+            );
+        }
+
+        $servicio = $this->servicioRepository->findById(
+            $reserva->servicio_id
+        );
+
+        if (!$servicio) {
+            throw new Exception(
+                'El servicio asociado a la reserva no fue encontrado',
+                404
+            );
+        }
+
+        if (
+            $servicio->profesional_id !==
+            $profesional->id
+        ) {
+            throw new Exception(
+                'No tiene permisos para esta reserva',
+                403
+            );
+        }
+    }
+
+    public function iniciar(
+        Request $request,
+        int $id
+    ): Reserva {
+        $reserva = $this->obtener($id);
+
+        $this->validarProfesionalDeReserva(
+            $request,
+            $reserva
+        );
+
+        if ($reserva->estado !== 'pagada') {
+            throw new Exception(
+                'La reserva debe estar pagada para poder iniciarla',
+                409
+            );
+        }
+
+        $reserva = $this->reservaRepository->update(
+            $reserva,
+            [
+                'estado' => 'en_curso',
+            ]
+        );
+
+        NotificarCambioReserva::dispatch(
+            $reserva->id,
+            'en_curso'
+        );
+
+        return $reserva;
+    }
+
+    public function finalizar(
+        Request $request,
+        int $id
+    ): Reserva {
+        $reserva = $this->obtener($id);
+
+        $this->validarProfesionalDeReserva(
+            $request,
+            $reserva
+        );
+
+        if ($reserva->estado !== 'en_curso') {
+            throw new Exception(
+                'La reserva debe estar en curso',
+                409
+            );
+        }
+
+        $reserva = $this->reservaRepository->update(
+            $reserva,
+            [
+                'estado' => 'finalizada',
+            ]
+        );
+
+        if ($reserva->paquete_cliente_id) {
+            $pc = PaqueteCliente::find($reserva->paquete_cliente_id);
+            if ($pc && $pc->estado === 'activo' && $pc->sesiones_disponibles > 0) {
+                $nuevasDisponibles = $pc->sesiones_disponibles - 1;
+                $pc->update([
+                    'sesiones_disponibles' => $nuevasDisponibles,
+                    'sesiones_usadas'      => $pc->sesiones_usadas + 1,
+                    'estado'               => $nuevasDisponibles === 0 ? 'agotado' : 'activo',
+                ]);
+            }
+        }
+
+        NotificarCambioReserva::dispatch(
+            $reserva->id,
+            'finalizada'
+        );
+
+        return $reserva;
+    }
+
+    public function noAsistida(
+        Request $request,
+        int $id
+    ): Reserva {
+        $reserva = $this->obtener($id);
+
+        $this->validarProfesionalDeReserva(
+            $request,
+            $reserva
+        );
+
+        if (!in_array(
+            $reserva->estado,
+            ['confirmada', 'pagada']
+        )) {
+            throw new Exception(
+                'La reserva debe estar confirmada o pagada',
+                409
+            );
+        }
+
+        $reserva = $this->reservaRepository->update(
+            $reserva,
+            [
+                'estado' => 'no_asistida',
+            ]
+        );
+
+        NotificarCambioReserva::dispatch(
+            $reserva->id,
+            'no_asistida'
+        );
+
+        return $reserva;
+    }
+
+    public function reprogramar(
+        Request $request,
+        int $id
+    ): Reserva {
+        $usuario = $request->user();
+
+        if (!$usuario) {
+            throw new Exception(
+                'No autenticado',
+                401
+            );
+        }
+
+        $reservaOriginal = $this->obtener($id);
+
+        $servicio = $this->servicioRepository->findById(
+            $reservaOriginal->servicio_id
+        );
+
+        if (!$servicio) {
+            throw new Exception(
+                'El servicio asociado a la reserva no fue encontrado',
+                404
+            );
+        }
+
+        $esClienteDueño =
+            $usuario->cliente &&
+            $reservaOriginal->cliente_id ===
+                $usuario->cliente->id;
+
+        $esProfesionalDelServicio =
+            $usuario->profesional &&
+            $servicio->profesional_id ===
+                $usuario->profesional->id;
+
+        if (
+            !$esClienteDueño &&
+            !$esProfesionalDelServicio
+        ) {
+            throw new Exception(
+                'No tenés permiso para reprogramar esta reserva',
+                403
+            );
+        }
+
+        if (!in_array(
+            $reservaOriginal->estado,
+            ['pendiente', 'confirmada', 'pagada']
+        )) {
+            throw new Exception(
+                'La reserva no se encuentra en un estado reprogramable',
+                409
+            );
+        }
+
+        $fechaActual =
+            $reservaOriginal->fecha instanceof \DateTimeInterface
+                ? $reservaOriginal->fecha->format('Y-m-d')
+                : substr(
+                    (string) $reservaOriginal->fecha,
+                    0,
+                    10
+                );
+
+        $horaActual = substr(
+            (string) $reservaOriginal->hora_inicio,
+            0,
+            5
+        );
+
+        $ahora = new \DateTime();
+
+        $fechaHoraOriginal = new \DateTime(
+            $fechaActual . ' ' . $horaActual
+        );
+
+        if ($fechaHoraOriginal <= $ahora) {
+            throw new Exception(
+                'No se puede reprogramar una reserva cuyo horario ya pasó',
+                409
+            );
+        }
+
+        if (
+            $fechaActual === $request->fecha &&
+            $horaActual === $request->hora_inicio
+        ) {
+            throw new Exception(
+                'La nueva fecha y hora son iguales a las actuales',
+                409
+            );
+        }
+
+        $nuevaFechaHora = new \DateTime(
+            $request->fecha . ' ' . $request->hora_inicio
+        );
+
+        if ($nuevaFechaHora <= $ahora) {
+            throw new Exception(
+                'No se puede reprogramar una reserva a una fecha u hora pasada',
+                409
+            );
+        }
+
+        $lockKey =
+            'reserva:servicio_' . $servicio->id .
+            ':fecha_' . $request->fecha;
+
+        $lock = Cache::lock($lockKey, 10);
+
+        try {
+            $reserva = $lock->block(
+                5,
+                function () use (
+                    $request,
+                    $id,
+                    $servicio
+                ) {
+                    return DB::transaction(
+                        function () use (
+                            $request,
+                            $id,
+                            $servicio
+                        ) {
+                     
+                            $reserva = $this->obtener($id);
+
+                            if (!in_array(
+                                $reserva->estado,
+                                [
+                                    'pendiente',
+                                    'confirmada',
+                                    'pagada',
+                                ]
+                            )) {
+                                throw new Exception(
+                                    'La reserva ya no se encuentra en un estado reprogramable',
+                                    409
+                                );
+                            }
+
+                            $horaInicio = new \DateTime(
+                                $request->hora_inicio
+                            );
+
+                            $horaInicioTexto =
+                                $horaInicio->format('H:i');
+
+                            $horaFin = clone $horaInicio;
+
+                            $horaFin->modify(
+                                '+' .
+                                $servicio->duracion_minutos .
+                                ' minutes'
+                            );
+
+                            $horaFinTexto =
+                                $horaFin->format('H:i');
+
+                            $fecha = new \DateTime(
+                                $request->fecha
+                            );
+
+                            $dias = [
+                                'Monday' => 'lunes',
+                                'Tuesday' => 'martes',
+                                'Wednesday' => 'miércoles',
+                                'Thursday' => 'jueves',
+                                'Friday' => 'viernes',
+                                'Saturday' => 'sabado',
+                                'Sunday' => 'domingo',
+                            ];
+
+                            $diaSemana =
+                                $dias[$fecha->format('l')];
+
+                            $disponibilidades =
+                                $this->disponibilidadRepository
+                                    ->findByProfesionalAndDia(
+                                        $servicio->profesional_id,
+                                        $diaSemana
+                                    );
+
+                            $hayDisponibilidad = false;
+                            $disponibilidadUsada = null;
+
+                            foreach (
+                                $disponibilidades
+                                as $disponibilidad
+                            ) {
+                                $inicioDisponibilidad = (
+                                    new \DateTime(
+                                        $disponibilidad->hora_inicio
+                                    )
+                                )->format('H:i');
+
+                                $finDisponibilidad = (
+                                    new \DateTime(
+                                        $disponibilidad->hora_fin
+                                    )
+                                )->format('H:i');
+
+                                if (
+                                    $horaInicioTexto >=
+                                        $inicioDisponibilidad &&
+                                    $horaFinTexto <=
+                                        $finDisponibilidad
+                                ) {
+                                    $hayDisponibilidad = true;
+
+                                    $disponibilidadUsada =
+                                        $disponibilidad;
+
+                                    break;
+                                }
+                            }
+
+                            if (!$hayDisponibilidad) {
+                                throw new Exception(
+                                    'El nuevo horario no está dentro de la disponibilidad del profesional',
+                                    409
+                                );
+                            }
+
+                            if (
+                                $disponibilidadUsada
+                                    ->hora_inicio_pausa !== null &&
+                                $disponibilidadUsada
+                                    ->hora_fin_pausa !== null
+                            ) {
+                                $inicioPausa = (
+                                    new \DateTime(
+                                        $disponibilidadUsada
+                                            ->hora_inicio_pausa
+                                    )
+                                )->format('H:i');
+
+                                $finPausa = (
+                                    new \DateTime(
+                                        $disponibilidadUsada
+                                            ->hora_fin_pausa
+                                    )
+                                )->format('H:i');
+
+                                $seSuperponeConPausa =
+                                    $horaInicioTexto <
+                                        $finPausa &&
+                                    $horaFinTexto >
+                                        $inicioPausa;
+
+                                if ($seSuperponeConPausa) {
+                                    throw new Exception(
+                                        'El nuevo horario coincide con la pausa del profesional',
+                                        409
+                                    );
+                                }
+                            }
+
+                            $excepciones =
+                                $this->excepcionRepository
+                                    ->findByProfesionalAndFecha(
+                                        $servicio->profesional_id,
+                                        $request->fecha
+                                    );
+
+                            foreach (
+                                $excepciones
+                                as $excepcion
+                            ) {
+                                if (!in_array(
+                                    $excepcion->tipo,
+                                    [
+                                        'bloqueo',
+                                        'feriado',
+                                        'licencia',
+                                        'pausa',
+                                    ]
+                                )) {
+                                    continue;
+                                }
+
+                                if (
+                                    $excepcion->hora_inicio === null ||
+                                    $excepcion->hora_fin === null
+                                ) {
+                                    throw new Exception(
+                                        'El profesional no está disponible en esa fecha',
+                                        409
+                                    );
+                                }
+
+                                $inicioExcepcion = (
+                                    new \DateTime(
+                                        $excepcion->hora_inicio
+                                    )
+                                )->format('H:i');
+
+                                $finExcepcion = (
+                                    new \DateTime(
+                                        $excepcion->hora_fin
+                                    )
+                                )->format('H:i');
+
+                                $seSuperponeConExcepcion =
+                                    $horaInicioTexto <
+                                        $finExcepcion &&
+                                    $horaFinTexto >
+                                        $inicioExcepcion;
+
+                                if (
+                                    $seSuperponeConExcepcion
+                                ) {
+                                    throw new Exception(
+                                        'El nuevo horario coincide con una excepción del profesional',
+                                        409
+                                    );
+                                }
+                            }
+
+                            $buffer =
+                                $disponibilidadUsada->buffer ?? 0;
+
+                            $horaFinConBuffer =
+                                clone $horaFin;
+
+                            $horaFinConBuffer->modify(
+                                '+' . $buffer . ' minutes'
+                            );
+
+                            $horaFinConBufferTexto =
+                                $horaFinConBuffer->format('H:i');
+
+                            $finDisponibilidadUsada = (
+                                new \DateTime(
+                                    $disponibilidadUsada->hora_fin
+                                )
+                            )->format('H:i');
+
+                            if (
+                                $horaFinConBufferTexto >
+                                $finDisponibilidadUsada
+                            ) {
+                                throw new Exception(
+                                    'La reserva más el buffer excede el horario disponible',
+                                    409
+                                );
+                            }
+
+                            $reservasDelDia =$this->reservaRepository->findByProfesionalFechaAndEstadosActivosForUpdate($servicio->profesional_id,$request->fecha);
+
+                            foreach (
+                                $reservasDelDia
+                                as $otraReserva
+                            ) {
+
+                                if (
+                                    $otraReserva->id ===
+                                    $reserva->id
+                                ) {
+                                    continue;
+                                }
+
+                                $inicioReservaExistente = (
+                                    new \DateTime(
+                                        $otraReserva->hora_inicio
+                                    )
+                                )->format('H:i');
+
+                                $finReservaExistente =
+                                    new \DateTime(
+                                        $otraReserva->hora_fin
+                                    );
+
+                                $finReservaExistente->modify(
+                                    '+' .
+                                    $buffer .
+                                    ' minutes'
+                                );
+
+                                $finReservaExistenteConBuffer =
+                                    $finReservaExistente
+                                        ->format('H:i');
+
+                                $seSuperpone =
+                                    $horaInicioTexto <
+                                        $finReservaExistenteConBuffer &&
+                                    $horaFinConBufferTexto >
+                                        $inicioReservaExistente;
+
+                                if ($seSuperpone) {
+                                    throw new Exception(
+                                        'Ya existe una reserva en el nuevo horario o dentro del buffer requerido',
+                                        409
+                                    );
+                                }
+                            }
+
+                            return $this->reservaRepository->update(
+                                $reserva,
+                                [
+                                    'fecha' => $request->fecha,
+                                    'hora_inicio' =>
+                                        $horaInicioTexto,
+                                    'hora_fin' =>
+                                        $horaFinTexto,
+                                ]
+                            );
+                        }
+                    );
+                }
+            );
+
+            event(new AgendaActualizada($reserva,'reprogramada'));
+
+            NotificarCambioReserva::dispatch($reserva->id,'reprogramada');
+
+            return $reserva;
+        } catch (LockTimeoutException $e) {
+            throw new Exception(
+                'El nuevo horario está siendo procesado por otra solicitud, intentá nuevamente',
+                409
+            );
+        }
+    }
+}
+>>>>>>> Stashed changes

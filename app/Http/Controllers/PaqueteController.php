@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PaqueteCliente;
 use App\Services\PaqueteService;
 use Exception;
 use Illuminate\Http\Request;
@@ -93,6 +94,48 @@ class PaqueteController extends Controller
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
         }
+    }
+
+    // GET /packages/mis-paquetes-profesional
+    public function misPaquetesProfesional(Request $request)
+    {
+        $profesional = $request->user()->profesional;
+
+        if (!$profesional) {
+            return response()->json(['error' => 'No tenés perfil de profesional'], 403);
+        }
+
+        $paquetes = \App\Models\Paquete::with('servicios')
+            ->whereHas('servicios', fn($q) => $q->where('profesional_id', $profesional->id))
+            ->get();
+
+        return response()->json($paquetes);
+    }
+
+    // GET /packages/para-servicio/{servicio_id}
+    public function paraServicio(Request $request, int $servicioId)
+    {
+        $cliente = $request->user()->cliente;
+
+        if (!$cliente) {
+            return response()->json(['error' => 'No tenés perfil de cliente'], 403);
+        }
+
+        $paquetes = PaqueteCliente::where('cliente_id', $cliente->id)
+            ->where('estado', 'activo')
+            ->where('sesiones_disponibles', '>', 0)
+            ->whereHas('paquete.servicios', fn($q) => $q->where('servicios.id', $servicioId))
+            ->with('paquete:id,nombre,cantidad_sesiones')
+            ->get()
+            ->map(fn($pc) => [
+                'paquete_cliente_id'   => $pc->id,
+                'nombre'               => $pc->paquete->nombre,
+                'sesiones_disponibles' => $pc->sesiones_disponibles,
+                'sesiones_usadas'      => $pc->sesiones_usadas,
+                'fecha_vencimiento'    => $pc->fecha_vencimiento,
+            ]);
+
+        return response()->json($paquetes);
     }
 
     // POST /packages/{id}/usar-sesion
