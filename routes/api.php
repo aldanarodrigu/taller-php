@@ -29,6 +29,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/admin/users/{user}', [AdminUserController::class, 'show']);
     //actividades
     Route::get('/admin/actividades', [ActividadController::class, 'index']);
+    Route::get('/admin/dashboard/metricas', [ActividadController::class, 'metricas']);
 });
 
 // AUTH
