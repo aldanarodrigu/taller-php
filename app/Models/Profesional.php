@@ -11,11 +11,17 @@ class Profesional extends Model
         'descripcion',
         'modalidad_atencion',
         'puntuacion_promedio',
-        'profesion'
+        'profesion',
+        'foto',
     ];
 
     public function user(){
         return $this->belongsTo(User::class);
+    }
+
+    public function servicios()
+    {
+        return $this->hasMany(Servicio::class);
     }
 
 }

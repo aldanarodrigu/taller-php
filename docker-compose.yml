@@ -83,6 +83,47 @@ services:
       - storage:/var/www/html/storage
     networks:
       - taller-net
+      
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taller-php-worker
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: ["php", "artisan", "queue:work", "redis", "--queue=default", "--tries=3", "--sleep=1", "--verbose"]
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8080
+      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-postgres}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSLMODE: ${DB_SSLMODE:-require}
+      CACHE_STORE: ${CACHE_STORE:-redis}
+      SESSION_DRIVER: ${SESSION_DRIVER:-database}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-redis}
+      BROADCAST_CONNECTION: ${BROADCAST_CONNECTION:-reverb}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REVERB_APP_ID: ${REVERB_APP_ID:-local-app}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:-local-key}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:-local-secret}
+      REVERB_HOST: ${REVERB_HOST:-websockets}
+      REVERB_PORT: ${REVERB_PORT:-6001}
+      REVERB_SCHEME: ${REVERB_SCHEME:-http}
+    depends_on:
+      - app
+      - redis
+      - websockets
+    volumes:
+      - .:/var/www/html
+      - storage:/var/www/html/storage
+    networks:
+      - taller-net
 
 volumes:
   storage:

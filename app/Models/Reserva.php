@@ -19,6 +19,7 @@ class Reserva extends Model
         'estado',
         'livekit_room',
         'livekit_token',
+        'recordatorio_enviado_at',
     ];
     
     public function cliente()

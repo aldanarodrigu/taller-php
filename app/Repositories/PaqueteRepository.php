@@ -29,7 +29,7 @@ class PaqueteRepository
 
     public function listarActivos()
     {
-        return Paquete::with('servicios')->where('activo', true)->get();
+        return Paquete::with('servicios')->whereRaw('"activo" IS TRUE')->get();
     }
 
     public function sincronizarServicios(Paquete $paquete, array $servicioIds): void
@@ -48,6 +48,14 @@ class PaqueteRepository
             'fecha_compra'         => now(),
             'fecha_vencimiento'    => $fechaVencimiento,
         ]);
+    }
+
+    public function listarPorCliente(int $clienteId)
+    {
+        return Paquete::with('servicios')
+            ->whereHas('clientes', fn($q) => $q->where('cliente_id', $clienteId))
+            ->with(['clientes' => fn($q) => $q->where('cliente_id', $clienteId)])
+            ->get();
     }
 
     public function usarSesion(int $paqueteId, int $clienteId): void

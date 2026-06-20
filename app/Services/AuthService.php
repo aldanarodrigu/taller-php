@@ -5,6 +5,7 @@ use App\Repositories\UserRepository;
 use App\Repositories\ClienteRepository;
 use App\Repositories\ProfesionalRepository;
 use App\Models\User;
+use App\Services\ActividadService;
 
 use Exception;
 use Illuminate\Http\Request;
@@ -15,12 +16,14 @@ class AuthService{
     private UserRepository $userRepository;
     private ClienteRepository $clienteRepository;
     private ProfesionalRepository $profesionalRepository;
+    private ActividadService $actividadService;
 
-    public function __construct(UserRepository $userRepository, ClienteRepository $clienteRepository, ProfesionalRepository $profesionalRepository)
+    public function __construct(UserRepository $userRepository, ClienteRepository $clienteRepository, ProfesionalRepository $profesionalRepository, ActividadService $actividadService)
     {
         $this->userRepository = $userRepository;
         $this->clienteRepository = $clienteRepository;
         $this->profesionalRepository = $profesionalRepository;
+        $this->actividadService = $actividadService;
     }
 
     public function registrar(Request $request){
@@ -45,6 +48,8 @@ class AuthService{
 
         $token = $user->createToken('auth_token')->plainTextToken;    
         
+        $this->actividadService->registrar($user->id,'REGISTRO','Se registró en la plataforma');
+
         return [
             'token' => $token,
             'user' => $user,
@@ -65,10 +70,40 @@ class AuthService{
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $this->actividadService->registrar($user->id,'LOGIN','Inició sesión');
+
         return [
             'token' => $token ,
             'user' => $user
         ]; 
+    }
+
+    public function registrarConGoogle(array $data): array
+    {
+        $user = $this->userRepository->create([
+            'nombre'    => $data['nombre'],
+            'apellido'  => '-',
+            'telefono'  => '-',
+            'email'     => $data['email'],
+            'google_id' => $data['google_id'],
+            'password'  => bcrypt(uniqid()),
+            'role'      => $data['role'],
+        ]);
+
+        if ($user->esCliente()) {
+            $this->clienteRepository->create(['user_id' => $user->id]);
+        } else {
+            $this->profesionalRepository->create(['user_id' => $user->id]);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        $this->actividadService->registrar($user->id,'REGISTRO','Se registró en la plataforma');
+
+        return [
+            'token' => $token,
+            'user'  => $user,
+        ];
     }
 
 }

@@ -13,6 +13,17 @@ class PaqueteController extends Controller
         private PaqueteService $paqueteService
     ) {}
 
+    // GET /packages/mis-paquetes
+    public function misPaquetes(Request $request)
+    {
+        try {
+            $paquetes = $this->paqueteService->misPaquetes($request);
+            return response()->json($paquetes, 200);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
+        }
+    }
+
     // GET /packages
     public function index()
     {

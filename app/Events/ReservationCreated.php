@@ -10,35 +10,27 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Support\Facades\Log;
 
 class ReservationCreated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $reserva;
+    private int $profesionalId; 
 
-    /**
-     * Create a new event instance.
-     */
     public function __construct(Reserva $reserva)
     {
         $this->reserva = $reserva;
+        $this->profesionalId = $reserva->servicio->profesional_id; 
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return \Illuminate\Broadcasting\Channel|array
-     */
-    public function broadcastOn()
+    public function broadcastOn(): array
     {
-        $servicio = $this->reserva->servicio()->first();
-        $profesionalId = $servicio ? $servicio->profesional_id : null;
-
         $channels = [];
 
-        if ($profesionalId) {
-            $channels[] = new PrivateChannel('profesional.' . $profesionalId);
+        if ($this->profesionalId) {
+            $channels[] = new PrivateChannel('profesional.' . $this->profesionalId);
         }
 
         if ($this->reserva->cliente_id) {
@@ -48,16 +40,17 @@ class ReservationCreated implements ShouldBroadcast
         return $channels;
     }
 
-    public function broadcastWith()
+    public function broadcastWith(): array
     {
+        Log::info('ReservationCreated BROADCAST');
         return [
             'reservation_id' => $this->reserva->id,
-            'servicio_id' => $this->reserva->servicio_id,
-            'fecha' => $this->reserva->fecha,
-            'hora_inicio' => $this->reserva->hora_inicio,
-            'hora_fin' => $this->reserva->hora_fin,
-            'estado' => $this->reserva->estado,
-            'cliente_id' => $this->reserva->cliente_id,
+            'servicio_id'    => $this->reserva->servicio_id,
+            'fecha'          => $this->reserva->fecha,
+            'hora_inicio'    => $this->reserva->hora_inicio,
+            'hora_fin'       => $this->reserva->hora_fin,
+            'estado'         => $this->reserva->estado,
+            'cliente_id'     => $this->reserva->cliente_id,
         ];
     }
 }

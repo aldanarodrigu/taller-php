@@ -4,13 +4,16 @@ namespace App\Services;
 
 use App\Models\Servicio;
 use App\Repositories\ServicioRepository;
+use App\Services\ActividadService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ServicioService
 {
     public function __construct(
-        private ServicioRepository $servicioRepository
+        private ServicioRepository $servicioRepository,
+        private ActividadService $actividadService,
     ) {}
 
     public function listar(array $filtros)
@@ -26,20 +29,32 @@ class ServicioService
             throw new Exception('El usuario no tiene perfil de profesional', 403);
         }
 
-        return $this->servicioRepository->create([
-            'profesional_id'           => $profesional->id,
-            'nombre'                   => $request->nombre,
-            'descripcion'              => $request->descripcion,
-            'tipo'                     => $request->tipo,
-            'modalidad'                => $request->modalidad,
-            'precio'                   => $request->precio,
-            'duracion_minutos'         => $request->duracion_minutos,
-            'videollamada'             => $request->videollamada ?? false,
+        $videollamada = $request->has('videollamada')
+            ? $this->toDatabaseBoolean($request->boolean('videollamada'))
+            : $this->toDatabaseBoolean(false);
+
+        $servicio = $this->servicioRepository->create([
+            'profesional_id'            => $profesional->id,
+            'nombre'                    => $request->nombre,
+            'descripcion'               => $request->descripcion,
+            'tipo'                      => $request->tipo,
+            'modalidad'                 => $request->modalidad,
+            'precio'                    => $request->precio,
+            'duracion_minutos'          => $request->duracion_minutos,
+            'videollamada'              => $videollamada,
             'cancelacion_horas_minimas' => $request->cancelacion_horas_minimas,
-            'direccion'                => $request->direccion,
-            'latitud'                  => $request->latitud,
-            'longitud'                 => $request->longitud,
+            'direccion'                 => $request->direccion,
+            'latitud'                   => $request->latitud,
+            'longitud'                  => $request->longitud,
         ]);
+
+        $this->actividadService->registrar(
+            $request->user()->id,
+            'CREAR_SERVICIO',
+            'Creó el servicio "' . $servicio->nombre . '"'
+        );
+
+        return $servicio;
     }
 
     public function obtenerServiciosUsuario(Request $request)
@@ -73,12 +88,22 @@ class ServicioService
         $servicio = $this->obtener($id);
         $this->verificarPropietario($request, $servicio);
 
-        return $this->servicioRepository->update($servicio, $request->only([
+        $data = $request->only([
             'nombre', 'descripcion', 'tipo', 'modalidad',
             'precio', 'duracion_minutos', 'activo',
             'videollamada', 'cancelacion_horas_minimas',
             'direccion', 'latitud', 'longitud',
-        ]));
+        ]);
+
+        if ($request->has('activo')) {
+            $data['activo'] = $this->toDatabaseBoolean($request->boolean('activo'));
+        }
+
+        if ($request->has('videollamada')) {
+            $data['videollamada'] = $this->toDatabaseBoolean($request->boolean('videollamada'));
+        }
+
+        return $this->servicioRepository->update($servicio, $data);
     }
 
     public function eliminar(Request $request, int $id): void
@@ -110,5 +135,12 @@ class ServicioService
         if (!$profesional || $servicio->profesional_id !== $profesional->id) {
             throw new Exception('No tenés permiso para modificar este servicio', 403);
         }
+    }
+
+    private function toDatabaseBoolean(bool $value): bool|string
+    {
+        return DB::connection()->getDriverName() === 'pgsql'
+            ? ($value ? 'true' : 'false')
+            : $value;
     }
 }

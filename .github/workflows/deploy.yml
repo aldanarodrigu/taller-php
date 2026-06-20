@@ -1,0 +1,53 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to deploy
+        required: false
+        default: main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Validate deploy secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          test -n "$DEPLOY_HOST" || { echo "DEPLOY_HOST is missing"; exit 1; }
+          test -n "$DEPLOY_USER" || { echo "DEPLOY_USER is missing"; exit 1; }
+          test -n "$DEPLOY_PATH" || { echo "DEPLOY_PATH is missing"; exit 1; }
+          test -n "$DEPLOY_SSH_KEY" || { echo "DEPLOY_SSH_KEY is missing"; exit 1; }
+
+      - name: Trust deployment host
+        run: |
+          mkdir -p .github/ssh
+          ssh-keyscan -T 15 -H "${{ secrets.DEPLOY_HOST }}" > .github/ssh/known_hosts || true
+          test -s .github/ssh/known_hosts || { echo "Unable to fetch host key for DEPLOY_HOST"; exit 1; }
+
+      - name: Deploy application
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_REF: ${{ github.event.inputs.ref || 'main' }}
+          DEPLOY_KNOWN_HOSTS: ${{ github.workspace }}/.github/ssh/known_hosts
+        run: |
+          ssh -o "UserKnownHostsFile=${DEPLOY_KNOWN_HOSTS}" -o "StrictHostKeyChecking=yes" "${DEPLOY_USER}@${DEPLOY_HOST}" "set -e; cd '${DEPLOY_PATH}'; git fetch --all --tags --prune; if git show-ref --verify --quiet 'refs/remotes/origin/${DEPLOY_REF}'; then git checkout -B '${DEPLOY_REF}' 'origin/${DEPLOY_REF}'; git reset --hard 'origin/${DEPLOY_REF}'; else git checkout --detach '${DEPLOY_REF}'; git reset --hard '${DEPLOY_REF}'; fi; composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader; php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; PHP_FPM_SERVICE=\$(systemctl list-unit-files --type=service --no-legend | awk '/^php[0-9.]+-fpm\.service/{print \$1; exit}' | sed 's/\.service$//'); if [ -z \"\$PHP_FPM_SERVICE\" ]; then PHP_FPM_SERVICE=php-fpm; fi; sudo systemctl restart \"\$PHP_FPM_SERVICE\" nginx taller-php-queue taller-php-reverb; FRONTEND_DIR=/var/www/taller-php-frontend; if [ ! -d \"\$FRONTEND_DIR/.git\" ]; then git clone https://github.com/aldanarodrigu/taller-php-frontend.git \"\$FRONTEND_DIR\"; fi; if [ -d \"\$FRONTEND_DIR/.git\" ] && command -v npm >/dev/null 2>&1; then cd \"\$FRONTEND_DIR\"; git fetch --all --tags --prune; git checkout -B main origin/main; npm ci --no-audit --no-fund; npm run build-only; rm -rf '${DEPLOY_PATH}/public/assets' '${DEPLOY_PATH}/public/index.html'; cp -r dist/assets '${DEPLOY_PATH}/public/'; cp dist/index.html '${DEPLOY_PATH}/public/'; sudo systemctl restart nginx; fi"

@@ -89,6 +89,17 @@ class PaqueteService
         $this->paqueteRepository->comprar($paquete->id, $cliente->id, $fechaVencimiento);
     }
 
+    public function misPaquetes(Request $request)
+    {
+        $cliente = $request->user()->cliente;
+
+        if (!$cliente) {
+            throw new Exception('El usuario no tiene perfil de cliente', 403);
+        }
+
+        return $this->paqueteRepository->listarPorCliente($cliente->id);
+    }
+
     public function usarSesion(Request $request, int $id): void
     {
         $paquete = $this->obtener($id);

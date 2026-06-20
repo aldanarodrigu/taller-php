@@ -36,6 +36,50 @@ La aplicación quedará disponible en `http://localhost:8080`.
 Si es la primera vez, Laravel generará el archivo `.env` y la clave de aplicación al iniciar el contenedor `app`.
 Después de levantar los contenedores, ejecuta las migraciones con `docker compose exec app php artisan migrate`.
 
+## CI/CD
+
+Este repositorio incluye workflows de GitHub Actions para automatizar validación y despliegue:
+
+- `CI`: corre en cada `push` y `pull_request`, instala dependencias y ejecuta `composer test`.
+- `Deploy`: se ejecuta en `push` a `main` o manualmente, y despliega por SSH en un servidor que ya tenga el repositorio clonado.
+
+Para el despliegue debes definir estos secretos en GitHub:
+
+- `DEPLOY_HOST`
+- `DEPLOY_USER`
+- `DEPLOY_PATH`
+- `DEPLOY_SSH_KEY`
+
+El pipeline de despliegue asume que el servidor puede ejecutar `git`, `composer` y `php artisan`.
+En `workflow_dispatch` podés pasar `ref` para desplegar una rama, tag o commit específico.
+
+## Deploy en EC2
+
+La guía operativa está en `deploy/aws/README.md`.
+
+Las plantillas para levantar Laravel en una instancia Ubuntu están en `deploy/aws/`:
+
+- `deploy/aws/user-data.sh`: instala PHP, Nginx, Redis y Composer.
+- `deploy/aws/systemd/taller-php-queue.service`: worker de colas.
+- `deploy/aws/systemd/taller-php-reverb.service`: servidor Reverb.
+- `deploy/aws/systemd/taller-php-scheduler.timer`: scheduler de Laravel.
+- `deploy/aws/nginx/taller-php.conf`: virtual host para `public/`.
+
+Usa esas plantillas como base y adapta el usuario, la ruta del proyecto y el dominio antes de aplicar el deploy.
+
+## Frontend separado
+
+Si el frontend se publica en `S3/CloudFront`, el backend solo debe exponer API y WebSockets.
+
+Configura en producción:
+
+- `APP_URL` con el dominio del backend.
+- `FRONTEND_URL` o el dominio de CloudFront para CORS y redirecciones.
+- `SANCTUM_STATEFUL_DOMAINS` con el dominio del frontend si usás autenticación por cookies.
+- `VITE_API_URL` en el frontend apuntando al backend público.
+
+Si más adelante querés servir el build desde Laravel, copiá `dist/` a `public/` antes del deploy y ajustá `nginx` para que el SPA resuelva con `index.php` o `index.html`.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\ServicioService;
+use App\Models\Servicio;
 use Exception;
 use Illuminate\Http\Request;
 
@@ -45,7 +46,7 @@ class ServicioController extends Controller
             $servicio = $this->servicioService->crear($request);
             return response()->json($servicio, 201);
         } catch (Exception $e) {
-            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -121,6 +122,13 @@ class ServicioController extends Controller
                 'error' => $e->getMessage()
             ], $e->getCode() ?: 400);
         }
+    }
+
+    // GET /services/con-profesional
+    public function indexConProfesional()
+    {
+        $servicios = Servicio::with('profesional.user')->paginate(20);
+        return response()->json($servicios, 200);
     }
 
 }

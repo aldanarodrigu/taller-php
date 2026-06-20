@@ -73,23 +73,59 @@ class AuthController extends Controller{
 
     public function callbackGoogle()
     {
-        $googleUser = Socialite::driver('google')->stateless()->user();
+        $googleUser = Socialite::driver('google')->user();
 
-        $user = User::firstOrCreate(
-            ['email' => $googleUser->email],
-            [
-                'nombre' => $googleUser->name,
-                'apellido' => '-',
-                'telefono' => '-',
-                'role' => 'cliente',
-                'google_id' => $googleUser->id,
-                'password' => bcrypt(uniqid())
-            ]
-        );
+        // si usuario existe hace login directo
+        $existing = User::where('email', $googleUser->email)->first();
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-        
-        return redirect(env('FRONTEND_URL') . '/auth/callback?token=' . $token);
+        if ($existing) {
+            if (!$existing->google_id) {
+                $existing->update(['google_id' => $googleUser->id]);
+            }
+            $token = $existing->createToken('auth_token')->plainTextToken;
+            return redirect(env('FRONTEND_URL') . '/auth/callback?token=' . $token);
+        }
+
+        // Usuario nuevo frontend elige rol
+        $payload = encrypt(json_encode([
+            'google_id' => $googleUser->id,
+            'nombre'    => $googleUser->name,
+            'email'     => $googleUser->email,
+            'expires_at' => now()->addMinutes(15)->timestamp,
+        ]));
+
+        return redirect(env('FRONTEND_URL') . '/auth/google/select-rol?payload=' . urlencode($payload));
+    }
+
+    public function completeGoogleRegister(Request $request)
+    {
+        $request->validate([
+            'payload' => 'required|string',
+            'role'    => 'required|in:cliente,profesional',
+        ]);
+
+        try {
+            $data = json_decode(decrypt($request->payload), true);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Payload inválido.'], 422);
+        }
+
+        if ($data['expires_at'] < now()->timestamp) {
+            return response()->json(['message' => 'El enlace expiró. Intentá de nuevo.'], 422);
+        }
+
+        if (User::where('email', $data['email'])->exists()) {
+            return response()->json(['message' => 'Este email ya está registrado.'], 409);
+        }
+
+        $result = $this->authService->registrarConGoogle([
+            'nombre'    => $data['nombre'],
+            'email'     => $data['email'],
+            'google_id' => $data['google_id'],
+            'role'      => $request->role,
+        ]);
+
+        return response()->json($result, 201);
     }
 
 }
