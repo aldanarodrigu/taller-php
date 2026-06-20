@@ -159,4 +159,17 @@ class PaqueteController extends Controller
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
         }
     }
+
+    public function porProfesional(int $id)
+    {
+        try {
+            $paquetes = $this->paqueteService->listarPorProfesional($id);
+
+            return response()->json($paquetes, 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], $e->getCode() ?: 400);
+        }
+    }
 }

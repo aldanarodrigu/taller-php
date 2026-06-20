@@ -131,4 +131,9 @@ class PaqueteService
 
         $this->paqueteRepository->usarSesion($paquete->id, $cliente->id);
     }
+
+    public function listarPorProfesional(int $profesionalId)
+    {
+        return $this->paqueteRepository->listarPorProfesional($profesionalId);
+    }
 }

@@ -52,11 +52,18 @@ class Servicio extends Model
 
     public function paquetes()
     {
-        return $this->belongsToMany(Paquete::class, 'paquete_servicio');
+        return $this->belongsToMany(
+            Paquete::class,
+            'paquete_servicio',
+            'servicio_id',
+            'paquete_id'
+        );
     }
 
     public function scopeActivo($query)
     {
         return $query->whereRaw('"activo" IS TRUE');
     }
+
+
 }

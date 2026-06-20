@@ -73,4 +73,13 @@ class PaqueteRepository
             'estado'               => $pivot->sesiones_disponibles - 1 <= 0 ? 'agotado' : 'activo',
         ]);
     }
+
+    public function listarPorProfesional(int $profesionalId)
+    {
+        return Paquete::with('servicios')
+            ->whereHas('servicios', function ($q) use ($profesionalId) {
+                $q->where('servicios.profesional_id', $profesionalId);
+            })
+            ->get();
+    }
 }

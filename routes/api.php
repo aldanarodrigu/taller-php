@@ -72,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/packages/mis-paquetes', [PaqueteController::class, 'misPaquetes']);
     Route::get('/packages/mis-paquetes-profesional', [PaqueteController::class, 'misPaquetesProfesional']);
     Route::get('/packages/para-servicio/{servicio_id}', [PaqueteController::class, 'paraServicio']);
+    Route::get('/packages/profesional/{id}', [PaqueteController::class, 'porProfesional']);
     Route::post('/packages', [PaqueteController::class, 'store']);
     Route::put('/packages/{id}', [PaqueteController::class, 'update']);
     Route::delete('/packages/{id}', [PaqueteController::class, 'destroy']);
