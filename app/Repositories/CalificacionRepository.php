@@ -42,4 +42,14 @@ class CalificacionRepository
     {
         $calificacion->delete();
     }
+
+    public function listarPorProfesional(int $profesionalId)
+    {
+        return Calificacion::with(['cliente.user', 'reserva.servicio'])
+            ->whereHas('reserva.servicio', function ($q) use ($profesionalId) {
+                $q->where('profesional_id', $profesionalId);
+            })
+            ->orderByDesc('created_at')
+            ->get();
+    }
 }

@@ -84,4 +84,9 @@ class CalificacionService
         $calificacion = $this->obtener($id);
         $this->calificacionRepository->delete($calificacion);
     }
+
+    public function listarPorProfesional(int $profesionalId)
+    {
+        return $this->calificacionRepository->listarPorProfesional($profesionalId);
+    }
 }

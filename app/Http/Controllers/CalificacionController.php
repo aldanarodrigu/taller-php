@@ -64,4 +64,11 @@ class CalificacionController extends Controller
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
         }
     }
+
+    // GET /professionals/{id}/reviews
+    public function porProfesional(int $profesionalId)
+    {
+        $calificaciones = $this->calificacionService->listarPorProfesional($profesionalId);
+        return response()->json($calificaciones, 200);
+    }   
 }

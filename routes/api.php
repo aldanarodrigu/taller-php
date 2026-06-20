@@ -127,6 +127,7 @@ Route::get('/reviews/{id}', [CalificacionController::class, 'show']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [CalificacionController::class, 'store']);
     Route::delete('/reviews/{id}', [CalificacionController::class, 'destroy']);
+    Route::get('/professionals/{id}/reviews', [CalificacionController::class, 'porProfesional']);
 });
 
 // VIDEOLLAMADAS
