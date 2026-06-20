@@ -143,4 +143,9 @@ class ServicioService
             ? ($value ? 'true' : 'false')
             : $value;
     }
+
+    public function listarPorProfesional(int $profesionalId)
+    {
+        return $this->servicioRepository->findByProfesional($profesionalId);
+    }
 }

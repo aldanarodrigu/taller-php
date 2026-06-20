@@ -58,6 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/services', [ServicioController::class, 'store']);
     Route::put('/services/{id}', [ServicioController::class, 'update']);
     Route::delete('/services/{id}', [ServicioController::class, 'destroy']);
+    Route::get('/services/profesional/{id}', [ServicioController::class, 'porProfesional']);
 });
 
 Route::get('/services/{id}/coordenadas', [ServicioController::class, 'coordenadas']);

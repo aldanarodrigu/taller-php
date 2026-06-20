@@ -131,4 +131,18 @@ class ServicioController extends Controller
         return response()->json($servicios, 200);
     }
 
+
+    public function porProfesional(int $id)
+    {
+        try {
+            $servicios = $this->servicioService->listarPorProfesional($id);
+
+            return response()->json($servicios, 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], $e->getCode() ?: 400);
+        }
+    }
+
 }

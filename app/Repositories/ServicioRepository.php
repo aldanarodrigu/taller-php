@@ -76,4 +76,5 @@ class ServicioRepository
 
         return $query->paginate(15);
     }
+
 }
