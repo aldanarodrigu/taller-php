@@ -1112,16 +1112,28 @@ class ReservaService
                                 }
                             }
 
-                            return $this->reservaRepository->update(
+                            /*return $this->reservaRepository->update(
                                 $reserva,
                                 [
                                     'fecha' => $request->fecha,
-                                    'hora_inicio' =>
-                                        $horaInicioTexto,
-                                    'hora_fin' =>
-                                        $horaFinTexto,
+                                    'hora_inicio' =>$horaInicioTexto,
+                                    'hora_fin' =>$horaFinTexto,
+                                    //'requiere_reprogramacion' => DB::raw('false'),
+                                    //'excepcion_id' => null,
+                                    //'motivo_reprogramacion' => null
                                 ]
-                            );
+                            );*/
+                            
+                            $reservaActualizada = $this->reservaRepository->update(
+                            $reserva,
+                            [
+                                'fecha' => $request->fecha,
+                                'hora_inicio' => $horaInicioTexto,
+                                'hora_fin' => $horaFinTexto,
+                            ]
+                        );
+
+                        return $this->reservaRepository->limpiarReprogramacion($reservaActualizada);
                         }
                     );
                 }

@@ -27,7 +27,15 @@ class ExcepcionController extends Controller
             $excepcion = $this->excepcionService->crear($request);
             return response()->json($excepcion, 201);
         } catch (Exception $e) {
-            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
+            $status = (int) $e->getCode();
+
+            if ($status < 100 || $status > 599) {
+                $status = 500;
+            }
+
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], $status);
         }
     }
 

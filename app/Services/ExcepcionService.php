@@ -4,13 +4,20 @@ namespace App\Services;
 
 use App\Models\Excepcion;
 use App\Repositories\ExcepcionRepository;
+use App\Repositories\ReservaRepository;
+
+use App\Events\AgendaActualizada;
+use App\Jobs\NotificarCambioReserva;
+use Illuminate\Support\Facades\DB;
+
 use Exception;
 use Illuminate\Http\Request;
 
 class ExcepcionService
 {
     public function __construct(
-        private ExcepcionRepository $excepcionRepository
+        private ExcepcionRepository $excepcionRepository,
+        private ReservaRepository $reservaRepository
     ) {}
 
     public function crear(Request $request): Excepcion
@@ -21,25 +28,58 @@ class ExcepcionService
             throw new Exception('El usuario no tiene perfil de profesional', 403);
         }
 
-        if (($request->hora_inicio === null && $request->hora_fin !== null) ||
-            ($request->hora_inicio !== null && $request->hora_fin === null)) {
+        $horaInicio = $request->input('hora_inicio');
+        $horaFin = $request->input('hora_fin');
+
+        if (($horaInicio === null && $horaFin !== null) ||
+            ($horaInicio !== null && $horaFin === null)) {
             throw new Exception('Se deben completar hora_inicio y hora_fin juntas', 422);
         }
 
-        if ($request->hora_inicio !== null && $request->hora_fin !== null) {
-            if ($request->hora_fin <= $request->hora_inicio) {
+        if ($horaInicio !== null && $horaFin !== null) {
+            if ($horaFin <= $horaInicio) {
                 throw new Exception('La hora de finalización debe ser mayor a la hora de inicio', 422);
             }
         }
 
-        return $this->excepcionRepository->create([
-            'profesional_id' => $profesional->id,
-            'fecha' => $request->fecha,
-            'hora_inicio' => $request->hora_inicio,
-            'hora_fin' => $request->hora_fin,
-            'tipo' => $request->tipo,
-            'motivo' => $request->motivo,
-        ]);
+        return DB::transaction(function () use ($request, $profesional, $horaInicio, $horaFin) {
+            $excepcion = $this->excepcionRepository->create([
+                'profesional_id' => $profesional->id,
+                'fecha' => $request->fecha,
+                'hora_inicio' => $horaInicio,
+                'hora_fin' => $horaFin,
+                'tipo' => $request->tipo,
+                'motivo' => $request->motivo,
+            ]);
+
+            $reservasAfectadas = $this->reservaRepository->findAfectadasPorExcepcion($profesional->id,$request->fecha,$horaInicio,$horaFin);
+
+            foreach ($reservasAfectadas as $reserva) {
+                $reservaActualizada = $this->reservaRepository->update(
+                    $reserva,
+                    [
+                        'requiere_reprogramacion' => DB::raw('true'),
+                        'excepcion_id' => $excepcion->id,
+                        'motivo_reprogramacion' => $request->motivo
+                            ?? 'La reserva fue afectada por una excepción del profesional',
+                    ]
+                );
+
+                event(
+                    new AgendaActualizada(
+                        $reservaActualizada,
+                        'requiere_reprogramacion'
+                    )
+                );
+
+                NotificarCambioReserva::dispatch(
+                    $reservaActualizada->id,
+                    'requiere_reprogramacion'
+                );
+            }
+
+            return $excepcion;
+        });
     }
 
     public function listar(Request $request)

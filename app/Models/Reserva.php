@@ -20,6 +20,13 @@ class Reserva extends Model
         'livekit_room',
         'livekit_token',
         'recordatorio_enviado_at',
+        'requiere_reprogramacion',
+        'excepcion_id',
+        'motivo_reprogramacion'
+    ];
+    
+    protected $casts = [
+        'requiere_reprogramacion' => 'boolean',
     ];
     
     public function cliente()
