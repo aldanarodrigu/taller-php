@@ -46,4 +46,6 @@ return [
         'service_key' => env('SUPABASE_SERVICE_KEY'),
     ],
 
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
 ];

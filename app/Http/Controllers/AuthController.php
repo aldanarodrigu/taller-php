@@ -77,7 +77,7 @@ class AuthController extends Controller{
 
     public function callbackGoogle(Request $request)
     {
-        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
+        $frontendUrl = rtrim(config('services.frontend_url', 'http://localhost:5173'), '/');
 
         if ($request->has('error') || !$request->has('code')) {
             $error = $request->get('error', 'oauth_invalid_request');
