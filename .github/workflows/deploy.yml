@@ -61,10 +61,7 @@ jobs:
               ssh-keyscan -T 15 -H "$HOST" > .github/ssh/known_hosts || true
             fi
           fi
-          if [ ! -s .github/ssh/known_hosts ]; then
-            echo "Warning: known_hosts not generated. Falling back to StrictHostKeyChecking=accept-new."
-            : > .github/ssh/known_hosts
-          fi
+          test -s .github/ssh/known_hosts || { echo "Unable to fetch host key. Set DEPLOY_KNOWN_HOSTS secret or verify DEPLOY_HOST/DEPLOY_PORT"; exit 1; }
 
       - name: Deploy application
         env:
@@ -85,4 +82,4 @@ jobs:
             PORT_FLAG="-p ${HOST##*:}"
             HOST="${HOST%%:*}"
           fi
-          ssh $PORT_FLAG -o "UserKnownHostsFile=${DEPLOY_KNOWN_HOSTS}" -o "StrictHostKeyChecking=accept-new" "${DEPLOY_USER}@${HOST}" "set -e; cd '${DEPLOY_PATH}'; git fetch --all --tags --prune; if git show-ref --verify --quiet 'refs/remotes/origin/${DEPLOY_REF}'; then git checkout -B '${DEPLOY_REF}' 'origin/${DEPLOY_REF}'; git reset --hard 'origin/${DEPLOY_REF}'; else git checkout --detach '${DEPLOY_REF}'; git reset --hard '${DEPLOY_REF}'; fi; composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader; php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; PHP_FPM_SERVICE=\$(systemctl list-unit-files --type=service --no-legend | awk '/^php[0-9.]+-fpm\.service/{print \$1; exit}' | sed 's/\.service$//'); if [ -z \"\$PHP_FPM_SERVICE\" ]; then PHP_FPM_SERVICE=php-fpm; fi; sudo systemctl restart \"\$PHP_FPM_SERVICE\" nginx taller-php-queue taller-php-reverb"
+          ssh $PORT_FLAG -o "UserKnownHostsFile=${DEPLOY_KNOWN_HOSTS}" -o "StrictHostKeyChecking=yes" "${DEPLOY_USER}@${HOST}" "set -e; cd '${DEPLOY_PATH}'; git fetch --all --tags --prune; if git show-ref --verify --quiet 'refs/remotes/origin/${DEPLOY_REF}'; then git checkout -B '${DEPLOY_REF}' 'origin/${DEPLOY_REF}'; git reset --hard 'origin/${DEPLOY_REF}'; else git checkout --detach '${DEPLOY_REF}'; git reset --hard '${DEPLOY_REF}'; fi; composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader; php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; PHP_FPM_SERVICE=\$(systemctl list-unit-files --type=service --no-legend | awk '/^php[0-9.]+-fpm\.service/{print \$1; exit}' | sed 's/\.service$//'); if [ -z \"\$PHP_FPM_SERVICE\" ]; then PHP_FPM_SERVICE=php-fpm; fi; sudo systemctl restart \"\$PHP_FPM_SERVICE\" nginx taller-php-queue taller-php-reverb"
