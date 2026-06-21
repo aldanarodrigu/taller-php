@@ -19,12 +19,99 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Select deploy mode
+        id: deploy_mode
+        env:
+          DEPLOY_SSM_INSTANCE_ID: ${{ secrets.DEPLOY_SSM_INSTANCE_ID }}
+        run: |
+          if [ -n "$DEPLOY_SSM_INSTANCE_ID" ]; then
+            echo "mode=ssm" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=ssh" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate SSM deploy secrets
+        if: steps.deploy_mode.outputs.mode == 'ssm'
+        env:
+          DEPLOY_SSM_INSTANCE_ID: ${{ secrets.DEPLOY_SSM_INSTANCE_ID }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          test -n "$DEPLOY_SSM_INSTANCE_ID" || { echo "DEPLOY_SSM_INSTANCE_ID is missing"; exit 1; }
+          test -n "$DEPLOY_PATH" || { echo "DEPLOY_PATH is missing"; exit 1; }
+          test -n "$AWS_ACCESS_KEY_ID" || { echo "AWS_ACCESS_KEY_ID is missing"; exit 1; }
+          test -n "$AWS_SECRET_ACCESS_KEY" || { echo "AWS_SECRET_ACCESS_KEY is missing"; exit 1; }
+          test -n "$AWS_REGION" || { echo "AWS_REGION is missing"; exit 1; }
+
+      - name: Configure AWS credentials
+        if: steps.deploy_mode.outputs.mode == 'ssm'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy application via SSM
+        if: steps.deploy_mode.outputs.mode == 'ssm'
+        env:
+          DEPLOY_SSM_INSTANCE_ID: ${{ secrets.DEPLOY_SSM_INSTANCE_ID }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_REF: ${{ github.event.inputs.ref || 'main' }}
+        run: |
+          set -e
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$DEPLOY_SSM_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy taller-php ${DEPLOY_REF}" \
+            --parameters commands="set -e","cd ${DEPLOY_PATH}","git fetch --all --tags --prune","if git show-ref --verify --quiet refs/remotes/origin/${DEPLOY_REF}; then git checkout -B ${DEPLOY_REF} origin/${DEPLOY_REF}; git reset --hard origin/${DEPLOY_REF}; else git checkout --detach ${DEPLOY_REF}; git reset --hard ${DEPLOY_REF}; fi","composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader","php artisan migrate --force","php artisan config:cache","php artisan route:cache","php artisan view:cache","PHP_FPM_SERVICE=$(systemctl list-unit-files --type=service --no-legend | awk '/^php[0-9.]+-fpm\\.service/{print $1; exit}' | sed 's/\\.service$//'); if [ -z \"$PHP_FPM_SERVICE\" ]; then PHP_FPM_SERVICE=php-fpm; fi; sudo systemctl restart \"$PHP_FPM_SERVICE\" nginx taller-php-queue taller-php-reverb" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM command id: $COMMAND_ID"
+
+          for i in $(seq 1 60); do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text 2>/dev/null || true)
+            echo "Attempt $i/60 - SSM status: ${STATUS:-pending}"
+
+            if [ "$STATUS" = "Success" ]; then
+              aws ssm list-command-invocations \
+                --command-id "$COMMAND_ID" \
+                --details \
+                --query "CommandInvocations[0].CommandPlugins[0].Output" \
+                --output text || true
+              exit 0
+            fi
+
+            if [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ] || [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelling" ]; then
+              aws ssm list-command-invocations \
+                --command-id "$COMMAND_ID" \
+                --details \
+                --query "CommandInvocations[0].CommandPlugins[0].Output" \
+                --output text || true
+              echo "SSM deployment failed with status: $STATUS"
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "SSM deployment timed out while waiting for completion"
+          exit 1
+
       - name: Setup SSH key
+        if: steps.deploy_mode.outputs.mode == 'ssh'
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
 
       - name: Validate deploy secrets
+        if: steps.deploy_mode.outputs.mode == 'ssh'
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
@@ -37,6 +124,7 @@ jobs:
           test -n "$DEPLOY_SSH_KEY" || { echo "DEPLOY_SSH_KEY is missing"; exit 1; }
 
       - name: Trust deployment host
+        if: steps.deploy_mode.outputs.mode == 'ssh'
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
@@ -67,6 +155,7 @@ jobs:
           fi
 
       - name: Deploy application
+        if: steps.deploy_mode.outputs.mode == 'ssh'
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
