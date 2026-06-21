@@ -61,11 +61,29 @@ jobs:
           DEPLOY_REF: ${{ github.event.inputs.ref || 'main' }}
         run: |
           set -e
+          cat > /tmp/ssm-params.json <<EOF
+          {
+            "commands": [
+              "set -e",
+              "cd '${DEPLOY_PATH}'",
+              "git fetch --all --tags --prune",
+              "if git show-ref --verify --quiet refs/remotes/origin/${DEPLOY_REF}; then git checkout -B ${DEPLOY_REF} origin/${DEPLOY_REF}; git reset --hard origin/${DEPLOY_REF}; else git checkout --detach ${DEPLOY_REF}; git reset --hard ${DEPLOY_REF}; fi",
+              "composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader",
+              "php artisan migrate --force",
+              "php artisan config:cache",
+              "php artisan route:cache",
+              "php artisan view:cache",
+              "if systemctl list-unit-files --type=service --no-legend | grep -q '^php8.3-fpm.service'; then sudo systemctl restart php8.3-fpm; elif systemctl list-unit-files --type=service --no-legend | grep -q '^php8.4-fpm.service'; then sudo systemctl restart php8.4-fpm; else sudo systemctl restart php-fpm || true; fi",
+              "sudo systemctl restart nginx taller-php-queue taller-php-reverb"
+            ]
+          }
+          EOF
+
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "$DEPLOY_SSM_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --comment "Deploy taller-php ${DEPLOY_REF}" \
-            --parameters commands="set -e","cd ${DEPLOY_PATH}","git fetch --all --tags --prune","if git show-ref --verify --quiet refs/remotes/origin/${DEPLOY_REF}; then git checkout -B ${DEPLOY_REF} origin/${DEPLOY_REF}; git reset --hard origin/${DEPLOY_REF}; else git checkout --detach ${DEPLOY_REF}; git reset --hard ${DEPLOY_REF}; fi","composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader","php artisan migrate --force","php artisan config:cache","php artisan route:cache","php artisan view:cache","PHP_FPM_SERVICE=$(systemctl list-unit-files --type=service --no-legend | awk '/^php[0-9.]+-fpm\\.service/{print $1; exit}' | sed 's/\\.service$//'); if [ -z \"$PHP_FPM_SERVICE\" ]; then PHP_FPM_SERVICE=php-fpm; fi; sudo systemctl restart \"$PHP_FPM_SERVICE\" nginx taller-php-queue taller-php-reverb" \
+            --parameters file:///tmp/ssm-params.json \
             --query "Command.CommandId" \
             --output text)
 
