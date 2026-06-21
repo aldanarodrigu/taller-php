@@ -56,4 +56,22 @@ class PagoController extends Controller
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
         }
     }
+    
+    // POST /pagos/{id}/rechazar
+    public function rechazar(Request $request, int $id)
+    {
+        try {
+            $pago = $this->pagoService->rechazar(
+                $request,
+                $id
+            );
+
+            return response()->json($pago, 200);
+        } catch (Exception $e) {
+            return response()->json(
+                ['error' => $e->getMessage()],
+                $e->getCode() ?: 400
+            );
+        }
+    }
 }

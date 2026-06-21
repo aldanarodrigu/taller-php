@@ -9,6 +9,7 @@ use App\Repositories\ExcepcionRepository;
 
 use App\Models\PaqueteCliente;
 use App\Models\Reserva;
+use App\Models\Pago;
 
 use App\Events\AgendaActualizada;
 use App\Events\ReservationCreated;
@@ -449,12 +450,20 @@ class ReservaService
             );
         }
 
-        $reserva = $this->reservaRepository->update(
-            $reserva,
-            [
-                'estado' => 'cancelada',
-            ]
-        );
+        $reserva = DB::transaction(function () use ($reserva) {
+            Pago::where('reserva_id', $reserva->id)
+                ->where('estado', 'pendiente')
+                ->update([
+                    'estado' => 'anulado',
+                ]);
+
+            return $this->reservaRepository->update(
+                $reserva,
+                [
+                    'estado' => 'cancelada',
+                ]
+            );
+        });
 
         event(
             new AgendaActualizada(
@@ -491,10 +500,14 @@ class ReservaService
             );
         }
 
-        $cliente = $usuario->cliente;
-        $profesional = $usuario->profesional;
-
         $reserva = $this->obtener($id);
+        
+        if (!$profesional || $servicio->profesional_id !== $profesional->id) {
+            throw new Exception(
+                'No tenés permiso para confirmar esta reserva',
+                403
+            );
+        }
 
         $servicio = $this->servicioRepository->findById(
             $reserva->servicio_id
@@ -504,17 +517,6 @@ class ReservaService
             throw new Exception(
                 'El servicio asociado a la reserva no fue encontrado',
                 404
-            );
-        }
-
-        $esClienteDueño =
-            $usuario->cliente &&
-            $reservaOriginal->cliente_id === $usuario->cliente->id;
-
-        if (!$esClienteDueño) {
-            throw new Exception(
-                'Solo el cliente propietario puede reprogramar esta reserva',
-                403
             );
         }
 
@@ -1115,18 +1117,6 @@ class ReservaService
                                     );
                                 }
                             }
-
-                            /*return $this->reservaRepository->update(
-                                $reserva,
-                                [
-                                    'fecha' => $request->fecha,
-                                    'hora_inicio' =>$horaInicioTexto,
-                                    'hora_fin' =>$horaFinTexto,
-                                    //'requiere_reprogramacion' => DB::raw('false'),
-                                    //'excepcion_id' => null,
-                                    //'motivo_reprogramacion' => null
-                                ]
-                            );*/
                             
                             $reservaActualizada = $this->reservaRepository->update(
                             $reserva,

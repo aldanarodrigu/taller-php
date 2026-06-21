@@ -110,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pagos', [PagoController::class, 'index']);
     Route::get('/pagos/{id}', [PagoController::class, 'show']);
     Route::post('/pagos/{id}/reintentar', [PagoController::class, 'reintentar']);
+    Route::post('/pagos/{id}/rechazar',[PagoController::class, 'rechazar']);
 });
 
 // EXCEPCIONES
