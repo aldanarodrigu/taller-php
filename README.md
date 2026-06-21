@@ -69,6 +69,9 @@ Usa esas plantillas como base y adapta el usuario, la ruta del proyecto y el dom
 
 ## Frontend separado
 
+El despliegue del frontend está desacoplado y se ejecuta desde el repositorio `taller-php-frontend`.
+Este backend solo despliega API, workers y WebSockets.
+
 Si el frontend se publica en `S3/CloudFront`, el backend solo debe exponer API y WebSockets.
 
 Configura en producción:
