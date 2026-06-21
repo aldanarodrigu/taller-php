@@ -42,6 +42,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
+Route::get('/auth/google/redirect', [AuthController::class, 'redirectGoogle']);
+Route::get('/auth/google/callback', [AuthController::class, 'callbackGoogle']);
+
 // USUARIOS
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/usuarios', [UsuariosController::class, 'listarUsuarios']);
