@@ -38,9 +38,22 @@ class ReservaService
 
     public function crear(Request $request): Reserva
     {
+        $servicioBase = $this->servicioRepository->findById(
+            $request->servicio_id
+        );
+
+        if (!$servicioBase) {
+            throw new Exception(
+                'El servicio no fue encontrado',
+                404
+            );
+        }
+
         $lockKey =
-            'reserva:servicio_' . $request->servicio_id .
-            ':fecha_' . $request->fecha;
+            'reserva:profesional_' .
+            $servicioBase->profesional_id .
+            ':fecha_' .
+            $request->fecha;
 
         $lock = Cache::lock($lockKey, 10);
 
@@ -497,19 +510,12 @@ class ReservaService
         }
 
         $esClienteDueño =
-            $cliente &&
-            $reserva->cliente_id === $cliente->id;
+            $usuario->cliente &&
+            $reservaOriginal->cliente_id === $usuario->cliente->id;
 
-        $esProfesionalDelServicio =
-            $profesional &&
-            $servicio->profesional_id === $profesional->id;
-
-        if (
-            !$esClienteDueño &&
-            !$esProfesionalDelServicio
-        ) {
+        if (!$esClienteDueño) {
             throw new Exception(
-                'No tenés permiso para confirmar esta reserva',
+                'Solo el cliente propietario puede reprogramar esta reserva',
                 403
             );
         }
@@ -714,10 +720,8 @@ class ReservaService
         return $reserva;
     }
 
-    public function reprogramar(
-        Request $request,
-        int $id
-    ): Reserva {
+    public function reprogramar(Request $request,int $id): Reserva 
+    {
         $usuario = $request->user();
 
         if (!$usuario) {
@@ -820,8 +824,10 @@ class ReservaService
         }
 
         $lockKey =
-            'reserva:servicio_' . $servicio->id .
-            ':fecha_' . $request->fecha;
+            'reserva:profesional_' .
+            $servicio->profesional_id .
+            ':fecha_' .
+            $request->fecha;
 
         $lock = Cache::lock($lockKey, 10);
 

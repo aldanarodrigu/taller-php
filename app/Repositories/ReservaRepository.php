@@ -105,4 +105,19 @@ class ReservaRepository {
 
         return $reserva->refresh();
     }
+    
+    public function findByProfesionalFechaAndEstadosActivos(int $profesionalId,string $fecha) {
+        return Reserva::query()
+            ->whereHas('servicio', function ($query) use ($profesionalId) {
+                $query->where('profesional_id', $profesionalId);
+            })
+            ->whereDate('fecha', $fecha)
+            ->whereIn('estado', [
+                'pendiente',
+                'confirmada',
+                'pagada',
+            ])
+            ->orderBy('hora_inicio')
+            ->get();
+    }
 }

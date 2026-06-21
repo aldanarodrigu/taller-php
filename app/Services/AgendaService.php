@@ -17,19 +17,75 @@ class AgendaService
         private ServicioRepository $servicioRepository
     ) {}
 
-    public function obtenerAgendaProfesional(int $profesionalId, string $fecha, int $servicioId): array
-    {
+    public function obtenerAgendaProfesional(
+        int $profesionalId,
+        string $fecha,
+        int $servicioId
+    ): array {
+
         $servicio = $this->servicioRepository->findById($servicioId);
 
         if (!$servicio) {
-            throw new Exception('El servicio no fue encontrado', 404);
+            throw new Exception(
+                'El servicio no fue encontrado',
+                404
+            );
         }
 
-        if ($servicio->profesional_id !== $profesionalId) {
-            throw new Exception('El servicio no pertenece al profesional indicado', 409);
+        if ((int) $servicio->profesional_id !== $profesionalId) {
+            throw new Exception(
+                'El servicio no pertenece al profesional indicado',
+                409
+            );
         }
 
-        $fechaObj = new \DateTime($fecha);
+        $duracion = (int) $servicio->duracion_minutos;
+
+        if ($duracion <= 0) {
+            throw new Exception(
+                'El servicio no tiene una duración válida',
+                500
+            );
+        }
+
+        $fechaObj = \DateTime::createFromFormat(
+            '!Y-m-d',
+            $fecha
+        );
+
+        $erroresFecha = \DateTime::getLastErrors();
+
+        $fechaInvalida =
+            $fechaObj === false ||
+            (
+                is_array($erroresFecha) &&
+                (
+                    $erroresFecha['warning_count'] > 0 ||
+                    $erroresFecha['error_count'] > 0
+                )
+            ) ||
+            $fechaObj->format('Y-m-d') !== $fecha;
+
+        if ($fechaInvalida) {
+            throw new Exception(
+                'La fecha indicada no es válida',
+                422
+            );
+        }
+        
+        $hoy = new \DateTime('today');
+
+        if ($fechaObj < $hoy) {
+            throw new Exception(
+                'No se puede consultar la agenda de una fecha anterior',
+                422
+            );
+        }
+
+        $ahora = new \DateTime();
+        $esHoy =
+            $fechaObj->format('Y-m-d') ===
+            $ahora->format('Y-m-d');
 
         $dias = [
             'Monday' => 'lunes',
@@ -41,119 +97,254 @@ class AgendaService
             'Sunday' => 'domingo',
         ];
 
-        $diaSemana = $dias[$fechaObj->format('l')];
+        $diaIngles = $fechaObj->format('l');
+        $diaSemana = $dias[$diaIngles] ?? null;
+
+        if (!$diaSemana) {
+            throw new Exception(
+                'No se pudo determinar el día de la semana',
+                500
+            );
+        }
 
         $disponibilidades = $this->disponibilidadRepository
-            ->findByProfesionalAndDia($profesionalId, $diaSemana);
+            ->findByProfesionalAndDia(
+                $profesionalId,
+                $diaSemana
+            );
 
         $excepciones = $this->excepcionRepository
-            ->findByProfesionalAndFecha($profesionalId, $fecha);
+            ->findByProfesionalAndFecha(
+                $profesionalId,
+                $fecha
+            );
 
         $reservas = $this->reservaRepository
-            ->findByServicioFechaAndEstadosActivos($servicioId, $fecha);
-        
+            ->findByProfesionalFechaAndEstadosActivos(
+                $profesionalId,
+                $fecha
+            );
+
         $horariosDisponibles = [];
 
         foreach ($disponibilidades as $disponibilidad) {
-            $buffer = $disponibilidad->buffer ?? 0;
+            $buffer = (int) ($disponibilidad->buffer ?? 0);
 
-            $horaActual = new \DateTime($disponibilidad->hora_inicio);
-            $horaFinDisponibilidad = new \DateTime($disponibilidad->hora_fin);
+            if ($buffer < 0) {
+                $buffer = 0;
+            }
+
+            $avanceMinutos = $duracion + $buffer;
+
+            if ($avanceMinutos <= 0) {
+                throw new Exception(
+                    'La duración y el buffer producen un avance inválido',
+                    500
+                );
+            }
+
+            $horaActual = new \DateTime(
+                $disponibilidad->hora_inicio
+            );
+
+            $horaFinDisponibilidad = new \DateTime(
+                $disponibilidad->hora_fin
+            );
+
+            $inicioPausa =
+                $disponibilidad->hora_inicio_pausa !== null
+                    ? new \DateTime(
+                        $disponibilidad->hora_inicio_pausa
+                    )
+                    : null;
+
+            $finPausa =
+                $disponibilidad->hora_fin_pausa !== null
+                    ? new \DateTime(
+                        $disponibilidad->hora_fin_pausa
+                    )
+                    : null;
+
+            $iteraciones = 0;
 
             while ($horaActual < $horaFinDisponibilidad) {
-                $inicioTexto = $horaActual->format('H:i');
+                $iteraciones++;
+
+                if ($iteraciones > 200) {
+                    throw new Exception(
+                        'Se detectó un ciclo infinito al generar los horarios',
+                        500
+                    );
+                }
 
                 $finTurno = clone $horaActual;
-                $finTurno->modify('+' . $servicio->duracion_minutos . ' minutes');
-                $finTexto = $finTurno->format('H:i');
+                $finTurno->modify(
+                    '+' . $duracion . ' minutes'
+                );
 
                 $finTurnoConBuffer = clone $finTurno;
-                $finTurnoConBuffer->modify('+' . $buffer . ' minutes');
-                $finConBufferTexto = $finTurnoConBuffer->format('H:i');
+                $finTurnoConBuffer->modify(
+                    '+' . $buffer . ' minutes'
+                );
                 
+                if ($finTurnoConBuffer > $horaFinDisponibilidad) {
+                    break;
+                }
+                
+                if ($esHoy) {
+                    $fechaHoraTurno = new \DateTime(
+                        $fecha . ' ' . $horaActual->format('H:i:s')
+                    );
+
+                    if ($fechaHoraTurno <= $ahora) {
+                        $horaActual = clone $finTurnoConBuffer;
+                        continue;
+                    }
+                }
+
                 $estaLibre = true;
+                $proximoInicio = null;
+                $motivoBloqueo = null;
 
-                // 1. Validar pausa normal
                 if (
-                    $disponibilidad->hora_inicio_pausa !== null &&
-                    $disponibilidad->hora_fin_pausa !== null
+                    $inicioPausa !== null &&
+                    $finPausa !== null
                 ) {
-                    
-                    $inicioPausaTexto = (new \DateTime($disponibilidad->hora_inicio_pausa))->format('H:i');
-                    $finPausaTexto = (new \DateTime($disponibilidad->hora_fin_pausa))->format('H:i');
-
                     $chocaConPausa =
-                        $inicioTexto < $disponibilidad->hora_fin_pausa &&
-                        $finTexto > $disponibilidad->hora_inicio_pausa;
+                        $horaActual < $finPausa &&
+                        $finTurno > $inicioPausa;
 
                     if ($chocaConPausa) {
                         $estaLibre = false;
+                        $proximoInicio = clone $finPausa;
+                        $motivoBloqueo = 'pausa habitual';
                     }
                 }
 
-                // 2. Validar excepciones
                 foreach ($excepciones as $excepcion) {
-                    if (in_array($excepcion->tipo, ['bloqueo', 'feriado', 'licencia', 'pausa'])) {
-                        if ($excepcion->hora_inicio === null || $excepcion->hora_fin === null) {
-                            $estaLibre = false;
-                            break;
-                        }
+                    if (!in_array(
+                        $excepcion->tipo,
+                        [
+                            'bloqueo',
+                            'feriado',
+                            'licencia',
+                            'pausa',
+                        ],
+                        true
+                    )) {
+                        continue;
+                    }
 
-                        $chocaConExcepcion =
-                            $inicioTexto < $excepcion->hora_fin &&
-                            $finTexto > $excepcion->hora_inicio;
+                    if (
+                        $excepcion->hora_inicio === null ||
+                        $excepcion->hora_fin === null
+                    ) {
+                        $estaLibre = false;
+                        $proximoInicio =
+                            clone $horaFinDisponibilidad;
 
-                        if ($chocaConExcepcion) {
-                            $estaLibre = false;
-                            break;
+                        $motivoBloqueo =
+                            'excepción de día completo';
+
+                        break;
+                    }
+
+                    $inicioExcepcion = new \DateTime(
+                        $excepcion->hora_inicio
+                    );
+
+                    $finExcepcion = new \DateTime(
+                        $excepcion->hora_fin
+                    );
+
+                    $chocaConExcepcion =
+                        $horaActual < $finExcepcion &&
+                        $finTurno > $inicioExcepcion;
+
+                    if ($chocaConExcepcion) {
+                        $estaLibre = false;
+                        $motivoBloqueo =
+                            'excepción ' . $excepcion->tipo;
+
+                        if (
+                            $proximoInicio === null ||
+                            $finExcepcion > $proximoInicio
+                        ) {
+                            $proximoInicio =
+                                clone $finExcepcion;
                         }
                     }
                 }
 
-                // 3. Validar reservas existentes + buffer
-                foreach ($reservas as $reserva) {
-                    $finReservaConBuffer = new \DateTime($reserva->hora_fin);
-                    $finReservaConBuffer->modify('+' . $buffer . ' minutes');
-                    $finReservaConBufferTexto = $finReservaConBuffer->format('H:i');
 
-                    $inicioReservaTexto = (new \DateTime($reserva->hora_inicio))->format('H:i');
-                    
+                foreach ($reservas as $reserva) {
+                    $inicioReserva = new \DateTime(
+                        $reserva->hora_inicio
+                    );
+
+                    $finReservaConBuffer = new \DateTime(
+                        $reserva->hora_fin
+                    );
+
+                    $finReservaConBuffer->modify(
+                        '+' . $buffer . ' minutes'
+                    );
+
                     $chocaConReserva =
-                        $inicioTexto < $finReservaConBufferTexto &&
-                        $finTexto > $reserva->hora_inicio;
+                        $horaActual < $finReservaConBuffer &&
+                        $finTurnoConBuffer > $inicioReserva;
 
                     if ($chocaConReserva) {
                         $estaLibre = false;
-                        break;
+                        $motivoBloqueo =
+                            'reserva existente #' . $reserva->id;
+
+                        if (
+                            $proximoInicio === null ||
+                            $finReservaConBuffer > $proximoInicio
+                        ) {
+                            $proximoInicio =
+                                clone $finReservaConBuffer;
+                        }
                     }
                 }
-                
-                logger()->info('Agenda debug', [
-                    'hora_actual' => $horaActual->format('H:i:s'),
-                    'hora_fin_disponibilidad' => $horaFinDisponibilidad->format('H:i:s')
-                ]);
 
-                // 4. Agregar si entra en disponibilidad y está libre
-                if ($finConBufferTexto <= $disponibilidad->hora_fin && $estaLibre) {
-                    $horariosDisponibles[] = $inicioTexto;
+                if ($estaLibre) {
+                    $horario = $horaActual->format('H:i');
+
+                    $horariosDisponibles[] = $horario;
+
+                    $horaActual = clone $finTurnoConBuffer;
+
+                    continue;
                 }
 
-                $horaActual->modify('+' . ($servicio->duracion_minutos + $buffer) . ' minutes');
-                
-                logger()->info('Agenda siguiente vuelta', [
-                    'hora_actual' => $horaActual->format('H:i:s')
-                ]);
-                
-                
+                if (
+                    $proximoInicio !== null &&
+                    $proximoInicio > $horaActual
+                ) {
+                    $horaActual = clone $proximoInicio;
+
+                    continue;
+                }
+
+                $horaActual->modify('+1 minute');
             }
         }
+
+        $horariosDisponibles = array_values(
+            array_unique($horariosDisponibles)
+        );
+
+        sort($horariosDisponibles);
+
         return [
             'profesional_id' => $profesionalId,
             'servicio_id' => $servicioId,
             'fecha' => $fecha,
             'dia_semana' => $diaSemana,
-            'duracion_minutos' => $servicio->duracion_minutos,
-            'horarios_disponibles' => $horariosDisponibles
+            'duracion_minutos' => $duracion,
+            'horarios_disponibles' => $horariosDisponibles,
         ];
     }
 }
