@@ -65,6 +65,7 @@ jobs:
           {
             "commands": [
               "set -e",
+              "export HOME=/root",
               "git config --global --add safe.directory '${DEPLOY_PATH}'",
               "cd '${DEPLOY_PATH}'",
               "git fetch --all --tags --prune",
