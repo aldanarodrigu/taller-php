@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Reserva;
+use Illuminate\Support\Facades\DB;
 
 class ReservaRepository {
     
@@ -71,5 +72,37 @@ class ReservaRepository {
             ->whereIn('estado', ['pendiente', 'confirmada', 'pagada', 'en_curso'])
             ->lockForUpdate()
             ->get();
+    }
+    
+    public function findAfectadasPorExcepcion(int $profesionalId,string $fecha,?string $horaInicio,?string $horaFin) {
+        return Reserva::query()
+            ->whereHas('servicio', function ($query) use ($profesionalId) {
+                $query->where('profesional_id', $profesionalId);
+            })
+            ->where('fecha', $fecha)
+            ->whereIn('estado', ['pendiente', 'confirmada', 'pagada'])
+            ->when(
+                $horaInicio !== null && $horaFin !== null,
+                function ($query) use ($horaInicio, $horaFin) {
+                    $query
+                        ->where('hora_inicio', '<', $horaFin)
+                        ->where('hora_fin', '>', $horaInicio);
+                }
+            )
+            ->lockForUpdate()
+            ->get();
+    }
+    
+    public function limpiarReprogramacion(Reserva $reserva): Reserva
+    {
+        Reserva::query()
+            ->where('id', $reserva->id)
+            ->update([
+                'requiere_reprogramacion' => DB::raw('false'),
+                'excepcion_id' => null,
+                'motivo_reprogramacion' => null,
+            ]);
+
+        return $reserva->refresh();
     }
 }
