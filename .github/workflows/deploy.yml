@@ -72,6 +72,7 @@ jobs:
               "if git show-ref --verify --quiet refs/remotes/origin/${DEPLOY_REF}; then git checkout -B ${DEPLOY_REF} origin/${DEPLOY_REF}; git reset --hard origin/${DEPLOY_REF}; else git checkout --detach ${DEPLOY_REF}; git reset --hard ${DEPLOY_REF}; fi",
               "composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader",
               "php artisan migrate --force",
+              "php artisan optimize:clear",
               "php artisan config:cache",
               "php artisan route:cache",
               "php artisan view:cache",
