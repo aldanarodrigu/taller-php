@@ -507,13 +507,9 @@ class ReservaService
             );
         }
 
-        $esClienteDueño =
-            $usuario->cliente &&
-            $reservaOriginal->cliente_id === $usuario->cliente->id;
-
-        if (!$esClienteDueño) {
+        if (!$profesional || $servicio->profesional_id !== $profesional->id) {
             throw new Exception(
-                'Solo el cliente propietario puede reprogramar esta reserva',
+                'No tenés permiso para confirmar esta reserva',
                 403
             );
         }
