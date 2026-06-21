@@ -37,17 +37,49 @@ jobs:
           test -n "$DEPLOY_SSH_KEY" || { echo "DEPLOY_SSH_KEY is missing"; exit 1; }
 
       - name: Trust deployment host
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_KNOWN_HOSTS_SECRET: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
+          set -e
           mkdir -p .github/ssh
-          ssh-keyscan -T 15 -H "${{ secrets.DEPLOY_HOST }}" > .github/ssh/known_hosts || true
-          test -s .github/ssh/known_hosts || { echo "Unable to fetch host key for DEPLOY_HOST"; exit 1; }
+          if [ -n "$DEPLOY_KNOWN_HOSTS_SECRET" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS_SECRET" > .github/ssh/known_hosts
+          else
+            HOST="$DEPLOY_HOST"
+            HOST="${HOST#*://}"
+            HOST="${HOST%%/*}"
+            PORT="$DEPLOY_PORT"
+            if [ -z "$PORT" ] && echo "$HOST" | grep -q ':'; then
+              PORT="${HOST##*:}"
+              HOST="${HOST%%:*}"
+            fi
+            if [ -n "$PORT" ]; then
+              ssh-keyscan -p "$PORT" -T 15 -H "$HOST" > .github/ssh/known_hosts || true
+            else
+              ssh-keyscan -T 15 -H "$HOST" > .github/ssh/known_hosts || true
+            fi
+          fi
+          test -s .github/ssh/known_hosts || { echo "Unable to fetch host key. Set DEPLOY_KNOWN_HOSTS secret or verify DEPLOY_HOST/DEPLOY_PORT"; exit 1; }
 
       - name: Deploy application
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           DEPLOY_REF: ${{ github.event.inputs.ref || 'main' }}
           DEPLOY_KNOWN_HOSTS: ${{ github.workspace }}/.github/ssh/known_hosts
         run: |
-          ssh -o "UserKnownHostsFile=${DEPLOY_KNOWN_HOSTS}" -o "StrictHostKeyChecking=yes" "${DEPLOY_USER}@${DEPLOY_HOST}" "set -e; cd '${DEPLOY_PATH}'; git fetch --all --tags --prune; if git show-ref --verify --quiet 'refs/remotes/origin/${DEPLOY_REF}'; then git checkout -B '${DEPLOY_REF}' 'origin/${DEPLOY_REF}'; git reset --hard 'origin/${DEPLOY_REF}'; else git checkout --detach '${DEPLOY_REF}'; git reset --hard '${DEPLOY_REF}'; fi; composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader; php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; PHP_FPM_SERVICE=\$(systemctl list-unit-files --type=service --no-legend | awk '/^php[0-9.]+-fpm\.service/{print \$1; exit}' | sed 's/\.service$//'); if [ -z \"\$PHP_FPM_SERVICE\" ]; then PHP_FPM_SERVICE=php-fpm; fi; sudo systemctl restart \"\$PHP_FPM_SERVICE\" nginx taller-php-queue taller-php-reverb"
+          HOST="$DEPLOY_HOST"
+          HOST="${HOST#*://}"
+          HOST="${HOST%%/*}"
+          PORT_FLAG=""
+          if [ -n "$DEPLOY_PORT" ]; then
+            PORT_FLAG="-p ${DEPLOY_PORT}"
+          elif echo "$HOST" | grep -q ':'; then
+            PORT_FLAG="-p ${HOST##*:}"
+            HOST="${HOST%%:*}"
+          fi
+          ssh $PORT_FLAG -o "UserKnownHostsFile=${DEPLOY_KNOWN_HOSTS}" -o "StrictHostKeyChecking=yes" "${DEPLOY_USER}@${HOST}" "set -e; cd '${DEPLOY_PATH}'; git fetch --all --tags --prune; if git show-ref --verify --quiet 'refs/remotes/origin/${DEPLOY_REF}'; then git checkout -B '${DEPLOY_REF}' 'origin/${DEPLOY_REF}'; git reset --hard 'origin/${DEPLOY_REF}'; else git checkout --detach '${DEPLOY_REF}'; git reset --hard '${DEPLOY_REF}'; fi; composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader; php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; PHP_FPM_SERVICE=\$(systemctl list-unit-files --type=service --no-legend | awk '/^php[0-9.]+-fpm\.service/{print \$1; exit}' | sed 's/\.service$//'); if [ -z \"\$PHP_FPM_SERVICE\" ]; then PHP_FPM_SERVICE=php-fpm; fi; sudo systemctl restart \"\$PHP_FPM_SERVICE\" nginx taller-php-queue taller-php-reverb"

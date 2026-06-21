@@ -66,14 +66,33 @@ class AuthController extends Controller{
         return response()->json($user, 200);
     }
 
-    public function redirectGoogle()
+    public function redirectGoogle(Request $request)
     {
-        return Socialite::driver('google')->redirect();
+        $callbackUrl = rtrim($request->getSchemeAndHttpHost(), '/') . '/auth/google/callback';
+
+        return Socialite::driver('google')
+            ->redirectUrl($callbackUrl)
+            ->redirect();
     }
 
-    public function callbackGoogle()
+    public function callbackGoogle(Request $request)
     {
-        $googleUser = Socialite::driver('google')->user();
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
+
+        if ($request->has('error') || !$request->has('code')) {
+            $error = $request->get('error', 'oauth_invalid_request');
+            return redirect($frontendUrl . '/auth/login?error=' . urlencode($error));
+        }
+
+        $callbackUrl = rtrim($request->getSchemeAndHttpHost(), '/') . '/auth/google/callback';
+
+        try {
+            $googleUser = Socialite::driver('google')
+                ->redirectUrl($callbackUrl)
+                ->user();
+        } catch (\Throwable $e) {
+            return redirect($frontendUrl . '/auth/login?error=' . urlencode('oauth_callback_failed'));
+        }
 
         // si usuario existe hace login directo
         $existing = User::where('email', $googleUser->email)->first();
@@ -83,7 +102,7 @@ class AuthController extends Controller{
                 $existing->update(['google_id' => $googleUser->id]);
             }
             $token = $existing->createToken('auth_token')->plainTextToken;
-            return redirect(env('FRONTEND_URL') . '/auth/callback?token=' . $token);
+            return redirect($frontendUrl . '/auth/callback?token=' . $token);
         }
 
         // Usuario nuevo frontend elige rol
@@ -94,7 +113,7 @@ class AuthController extends Controller{
             'expires_at' => now()->addMinutes(15)->timestamp,
         ]));
 
-        return redirect(env('FRONTEND_URL') . '/auth/google/select-rol?payload=' . urlencode($payload));
+        return redirect($frontendUrl . '/auth/google/select-rol?payload=' . urlencode($payload));
     }
 
     public function completeGoogleRegister(Request $request)
