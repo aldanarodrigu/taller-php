@@ -370,18 +370,16 @@ class ReservaService
         Request $request,
         int $id
     ): Reserva {
-        $cliente = $request->user()->cliente;
-
-        if (!$cliente) {
-            throw new Exception(
-                'El usuario no tiene perfil de cliente',
-                403
-            );
-        }
+        $user       = $request->user();
+        $cliente    = $user->cliente;
+        $profesional = $user->profesional;
 
         $reserva = $this->obtener($id);
 
-        if ($reserva->cliente_id !== $cliente->id) {
+        $esCliente     = $cliente && $reserva->cliente_id === $cliente->id;
+        $esProfesional = $profesional && $reserva->servicio->profesional_id === $profesional->id;
+
+        if (!$esCliente && !$esProfesional) {
             throw new Exception(
                 'No tenés permiso para cancelar esta reserva',
                 403
