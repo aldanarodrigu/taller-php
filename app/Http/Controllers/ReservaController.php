@@ -42,10 +42,20 @@ class ReservaController extends Controller
     }
     
     // GET /reservas/{id}
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
         try {
             $reserva = $this->reservaService->obtener($id);
+
+            $user = $request->user();
+            $esCliente     = $user->cliente && $reserva->cliente_id === $user->cliente->id;
+            $esProfesional = $user->profesional && $reserva->servicio->profesional_id === $user->profesional->id;
+            $esAdmin       = $user->role === 'admin';
+
+            if (!$esCliente && !$esProfesional && !$esAdmin) {
+                return response()->json(['error' => 'No tenés permiso para ver esta reserva'], 403);
+            }
+
             return response()->json($reserva, 200);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 400);
