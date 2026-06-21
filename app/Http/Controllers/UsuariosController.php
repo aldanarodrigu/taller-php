@@ -30,6 +30,10 @@ class UsuariosController extends Controller{
     }
 
     public function editarUsuario(Request $request, int $id){
+        if ($request->user()->id !== $id) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
         $request->validate([
             'nombre' => 'nullable',
             'apellido' => 'nullable',
