@@ -38,7 +38,7 @@ jobs:
           REVERB_APP_ID: local-app
           REVERB_APP_KEY: local-key
           REVERB_APP_SECRET: local-secret
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: composer install --no-interaction --prefer-dist --no-progress --ignore-platform-req=ext-mongodb
 
       - name: Prepare environment
         run: |
