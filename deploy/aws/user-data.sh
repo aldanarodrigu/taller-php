@@ -5,6 +5,11 @@ export DEBIAN_FRONTEND=noninteractive
 APP_DIR="/var/www/taller-php"
 PHP_VERSION="8.4"
 
+# ── Ensure SSM Agent is installed and running (required for GitHub Actions deploy) ──
+snap install amazon-ssm-agent --classic || true
+systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service || true
+systemctl start  snap.amazon-ssm-agent.amazon-ssm-agent.service || true
+
 apt-get update
 apt-get install -y software-properties-common ca-certificates curl git unzip nginx redis-server
 add-apt-repository -y ppa:ondrej/php

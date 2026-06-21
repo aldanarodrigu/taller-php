@@ -27,6 +27,13 @@ Homestead.yaml
 Thumbs.db
 /nbproject/private/
 
+# Terraform – sensitive files (never commit)
+/infra/terraform/terraform.tfvars
+/infra/terraform/.terraform/
+/infra/terraform/terraform.tfstate
+/infra/terraform/terraform.tfstate.backup
+/infra/terraform/.terraform.lock.hcl
+
 # Ignore frontend build artifacts copied into public and deploy instructions
 /DEPLOY_FRONT_AND_TUNNEL.txt
 /RUN_COMMANDS.txt
