@@ -32,6 +32,12 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
+        env:
+          APP_ENV: testing
+          BROADCAST_CONNECTION: log
+          REVERB_APP_ID: local-app
+          REVERB_APP_KEY: local-key
+          REVERB_APP_SECRET: local-secret
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Prepare environment
