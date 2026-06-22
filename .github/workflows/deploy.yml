@@ -78,7 +78,7 @@ jobs:
               "sudo -u ubuntu php artisan route:cache",
               "sudo -u ubuntu php artisan view:cache",
               "if systemctl list-unit-files --type=service --no-legend | grep -q '^php8.3-fpm.service'; then sudo systemctl restart php8.3-fpm; elif systemctl list-unit-files --type=service --no-legend | grep -q '^php8.4-fpm.service'; then sudo systemctl restart php8.4-fpm; else sudo systemctl restart php-fpm || true; fi",
-              "sudo systemctl restart nginx taller-php-queue taller-php-reverb"
+              "sudo systemctl restart nginx laravel-worker reverb"
             ]
           }
           EOF
