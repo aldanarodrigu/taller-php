@@ -312,6 +312,17 @@ class ReservaService
                         'estado' => 'pendiente',
                     ]);
 
+                    // Descontar sesión del paquete al momento de reservar
+                    if ($paqueteClienteId) {
+                        $pc->refresh();
+                        $nuevasDisponibles = $pc->sesiones_disponibles - 1;
+                        $pc->update([
+                            'sesiones_disponibles' => $nuevasDisponibles,
+                            'sesiones_usadas'      => $pc->sesiones_usadas + 1,
+                            'estado'               => $nuevasDisponibles === 0 ? 'agotado' : 'activo',
+                        ]);
+                    }
+
                     event(new AgendaActualizada($reserva,'creada'));
 
                     event(new ReservationCreated($reserva));
@@ -455,6 +466,18 @@ class ReservaService
                 'estado' => 'cancelada',
             ]
         );
+
+        // Devolver sesión al paquete si la reserva tenía uno
+        if ($reserva->paquete_cliente_id) {
+            $pc = PaqueteCliente::find($reserva->paquete_cliente_id);
+            if ($pc) {
+                $pc->update([
+                    'sesiones_disponibles' => $pc->sesiones_disponibles + 1,
+                    'sesiones_usadas'      => max(0, $pc->sesiones_usadas - 1),
+                    'estado'               => 'activo',
+                ]);
+            }
+        }
 
         event(
             new AgendaActualizada(
@@ -656,19 +679,6 @@ class ReservaService
                 'estado' => 'finalizada',
             ]
         );
-
-        if ($reserva->paquete_cliente_id) {
-            $pc = PaqueteCliente::find($reserva->paquete_cliente_id);
-            if ($pc && $pc->estado === 'activo' && $pc->sesiones_disponibles > 0) {
-                $nuevasDisponibles = $pc->sesiones_disponibles - 1;
-                $pc->update([
-                    'sesiones_disponibles' => $nuevasDisponibles,
-                    'sesiones_usadas'      => $pc->sesiones_usadas + 1,
-                    'estado'               => $nuevasDisponibles === 0 ? 'agotado' : 'activo',
-                ]);
-            }
-        }
-
 
         NotificarCambioReserva::dispatch(
             $reserva->id,
