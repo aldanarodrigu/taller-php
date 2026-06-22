@@ -13,12 +13,15 @@ class EnviarRecordatoriosTurnos extends Command
 
     protected $description = 'Envía recordatorios de turnos próximos';
     public function handle(){
-        $objetivo = now()->addDay();
+        $ahora = now();
+        $desde = $ahora->copy()->addDay()->startOfMinute();
+        $hasta = $desde->copy()->addHour();
 
         $reservas = Reserva::where('estado', 'confirmada')
             ->whereNull('recordatorio_enviado_at')
-            ->whereDate('fecha', $objetivo->toDateString())
-            ->whereTime('hora_inicio', $objetivo->format('H:i:00'))
+            ->whereDate('fecha', $desde->toDateString())
+            ->whereTime('hora_inicio', '>=', $desde->format('H:i:00'))
+            ->whereTime('hora_inicio', '<', $hasta->format('H:i:00'))
             ->get();
 
         foreach ($reservas as $reserva) {
