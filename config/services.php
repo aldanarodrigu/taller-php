@@ -48,4 +48,10 @@ return [
 
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
 
+    'livekit' => [
+        'url'    => env('LIVEKIT_URL', 'wss://localhost'),
+        'key'    => env('LIVEKIT_API_KEY'),
+        'secret' => env('LIVEKIT_API_SECRET'),
+    ],
+
 ];

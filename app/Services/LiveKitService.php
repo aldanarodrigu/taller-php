@@ -39,7 +39,7 @@ class LiveKitService
         return [
             'token' => $token,
             'room'  => $room,
-            'url'   => env('LIVEKIT_URL', 'wss://tu-servidor-livekit'),
+            'url'   => config('services.livekit.url', 'wss://tu-servidor-livekit'),
         ];
     }
 
@@ -97,8 +97,8 @@ class LiveKitService
 
     private function crearJwt(string $room, string $identity): string
     {
-        $apiKey    = env('LIVEKIT_API_KEY');
-        $apiSecret = env('LIVEKIT_API_SECRET');
+        $apiKey    = config('services.livekit.key');
+        $apiSecret = config('services.livekit.secret');
 
         if (!$apiKey || !$apiSecret) {
             throw new Exception('LiveKit no está configurado', 500);
