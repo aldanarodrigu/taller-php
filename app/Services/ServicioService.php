@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Servicio;
 use App\Repositories\ServicioRepository;
 use App\Services\ActividadService;
+use App\Models\Disponibilidad;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,14 @@ class ServicioService
 
         if (!$profesional) {
             throw new Exception('El usuario no tiene perfil de profesional', 403);
+        }
+
+        $tieneDisponibilidad = Disponibilidad::where('profesional_id', $profesional->id)->exists();
+        if (!$tieneDisponibilidad) {
+            throw new Exception(
+                'Debés configurar tu disponibilidad horaria antes de crear un servicio.',
+                422
+            );
         }
 
         $videollamada = $request->has('videollamada')
@@ -110,6 +119,15 @@ class ServicioService
     {
         $servicio = $this->obtener($id);
         $this->verificarPropietario($request, $servicio);
+
+        $tieneReservas = $servicio->reservas()->exists();
+        if ($tieneReservas) {
+            throw new Exception(
+                'No se puede eliminar el servicio porque tiene reservas asociadas. Podés desactivarlo en su lugar.',
+                422
+            );
+        }
+
         $this->servicioRepository->delete($servicio);
     }
 
