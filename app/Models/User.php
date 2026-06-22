@@ -66,4 +66,9 @@ use App\Models\Actividad;
             return $this->hasMany(Actividad::class, 'usuario_id');
         }
 
+        public function receivesBroadcastNotificationsOn(): string
+        {
+            return 'usuario.' . $this->id;
+        }
+
     }

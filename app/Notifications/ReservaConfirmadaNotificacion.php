@@ -21,7 +21,7 @@ class ReservaConfirmadaNotificacion extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database', 'mail', 'broadcast'];
     }
 
     public function toArray(object $notifiable): array
